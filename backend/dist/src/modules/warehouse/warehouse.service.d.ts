@@ -6,28 +6,28 @@ export declare class WarehouseService {
     constructor(prisma: PrismaService, stopListService: StopListService);
     getIngredients(): Promise<{
         id: string;
-        name: string;
         organizationId: string;
-        isSemiFinished: boolean;
+        name: string;
         code: string | null;
         category: string;
         mainUnit: string;
         costPerUnit: number;
         minStockLevel: number;
         lossPercentage: number;
+        isSemiFinished: boolean;
         subRecipeId: string | null;
     }[]>;
     createIngredient(data: any): Promise<{
         id: string;
-        name: string;
         organizationId: string;
-        isSemiFinished: boolean;
+        name: string;
         code: string | null;
         category: string;
         mainUnit: string;
         costPerUnit: number;
         minStockLevel: number;
         lossPercentage: number;
+        isSemiFinished: boolean;
         subRecipeId: string | null;
     }>;
     getBalances(warehouseId?: string): Promise<{
@@ -56,29 +56,29 @@ export declare class WarehouseService {
         items: ({
             ingredient: {
                 id: string;
-                name: string;
                 organizationId: string;
-                isSemiFinished: boolean;
+                name: string;
                 code: string | null;
                 category: string;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
                 lossPercentage: number;
+                isSemiFinished: boolean;
                 subRecipeId: string | null;
             };
         } & {
             id: string;
-            quantity: number;
             ingredientId: string;
-            unitCost: number;
+            quantity: number;
             stockMovementId: string;
+            unitCost: number;
         })[];
     } & {
         id: string;
+        createdAt: Date;
         type: string;
         comment: string | null;
-        createdAt: Date;
         warehouseId: string;
         referenceId: string | null;
     }>;
@@ -93,73 +93,73 @@ export declare class WarehouseService {
         items: ({
             ingredient: {
                 id: string;
-                name: string;
                 organizationId: string;
-                isSemiFinished: boolean;
+                name: string;
                 code: string | null;
                 category: string;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
                 lossPercentage: number;
+                isSemiFinished: boolean;
                 subRecipeId: string | null;
             };
         } & {
             id: string;
-            quantity: number;
             ingredientId: string;
-            unitCost: number;
+            quantity: number;
             stockMovementId: string;
+            unitCost: number;
         })[];
     } & {
         id: string;
+        createdAt: Date;
         type: string;
         comment: string | null;
-        createdAt: Date;
         warehouseId: string;
         referenceId: string | null;
     }>;
     getMovements(): Promise<({
-        warehouse: {
-            id: string;
-            name: string;
-            isMain: boolean;
-            branchId: string;
-        };
         items: ({
             ingredient: {
                 id: string;
-                name: string;
                 organizationId: string;
-                isSemiFinished: boolean;
+                name: string;
                 code: string | null;
                 category: string;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
                 lossPercentage: number;
+                isSemiFinished: boolean;
                 subRecipeId: string | null;
             };
         } & {
             id: string;
-            quantity: number;
             ingredientId: string;
-            unitCost: number;
+            quantity: number;
             stockMovementId: string;
+            unitCost: number;
         })[];
+        warehouse: {
+            branchId: string;
+            id: string;
+            name: string;
+            isMain: boolean;
+        };
     } & {
         id: string;
+        createdAt: Date;
         type: string;
         comment: string | null;
-        createdAt: Date;
         warehouseId: string;
         referenceId: string | null;
     })[]>;
     getIncidents(): Promise<{
         id: string;
         createdAt: Date;
-        ingredientId: string;
         receiptId: string;
+        ingredientId: string;
         ingredientName: string;
         requestedQty: number;
         availableQty: number;

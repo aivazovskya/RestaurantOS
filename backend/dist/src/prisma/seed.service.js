@@ -19,6 +19,9 @@ let SeedService = SeedService_1 = class SeedService {
     constructor(prisma) {
         this.prisma = prisma;
     }
+    async onApplicationBootstrap() {
+        await this.seedDemoData();
+    }
     async seedDemoData() {
         const existingOrg = await this.prisma.organization.findFirst();
         if (existingOrg) {
