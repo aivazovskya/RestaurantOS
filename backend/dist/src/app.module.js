@@ -23,6 +23,8 @@ const loyalty_module_1 = require("./modules/loyalty/loyalty.module");
 const coupon_module_1 = require("./modules/coupon/coupon.module");
 const notification_module_1 = require("./modules/notification/notification.module");
 const courier_module_1 = require("./modules/courier/courier.module");
+const analytics_module_1 = require("./modules/analytics/analytics.module");
+const ai_chat_module_1 = require("./modules/ai-chat/ai-chat.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -43,6 +45,8 @@ exports.AppModule = AppModule = __decorate([
             coupon_module_1.CouponModule,
             notification_module_1.NotificationModule,
             courier_module_1.CourierModule,
+            analytics_module_1.AnalyticsModule,
+            ai_chat_module_1.AiChatModule,
         ],
         providers: [seed_service_1.SeedService],
     })

@@ -15,24 +15,31 @@ export class CustomerService {
   /**
    * Finds existing customer by phone or creates a new profile.
    */
-  async findOrCreateByPhone(phone: string, name?: string) {
+  async findOrCreateByPhone(phone: string, name?: string, txClient?: any) {
     if (!phone) return null;
     const clean = this.cleanPhone(phone);
     if (!clean) return null;
 
-    let customer = await this.prisma.customer.findUnique({
+    const db = txClient || this.prisma;
+
+    let customer = await db.customer.findUnique({
       where: { phone: clean },
     });
 
     if (!customer) {
-      customer = await this.prisma.customer.create({
-        data: {
-          phone: clean,
-          name: name || `Гость ${clean.slice(-4)}`,
-        },
-      });
+      try {
+        customer = await db.customer.create({
+          data: {
+            phone: clean,
+            name: name || `Гость ${clean.slice(-4)}`,
+          },
+        });
+      } catch (e) {
+        // Fallback for concurrent creation race
+        customer = await db.customer.findUnique({ where: { phone: clean } });
+      }
     } else if (name && !customer.name) {
-      customer = await this.prisma.customer.update({
+      customer = await db.customer.update({
         where: { id: customer.id },
         data: { name },
       });
@@ -94,20 +101,23 @@ export class CustomerService {
   }
 
   /**
-   * Updates customer aggregate totals (totalSpent and visitsCount) when order status changes.
+   * Updates customer aggregate totals (totalSpent and visitsCount) using atomic increment.
    */
-  async updateCustomerStats(customerId: string, spentDelta: number, visitsDelta: number) {
-    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+  async updateCustomerStats(customerId: string, spentDelta: number, visitsDelta: number, txClient?: any) {
+    const db = txClient || this.prisma;
+
+    const customer = await db.customer.findUnique({ where: { id: customerId } });
     if (!customer) return;
 
-    const newSpent = Math.max(0, customer.totalSpent + spentDelta);
-    const newVisits = Math.max(0, customer.visitsCount + visitsDelta);
-
-    return await this.prisma.customer.update({
+    return await db.customer.update({
       where: { id: customerId },
       data: {
-        totalSpent: newSpent,
-        visitsCount: newVisits,
+        totalSpent: spentDelta >= 0
+          ? { increment: spentDelta }
+          : { decrement: Math.abs(spentDelta) },
+        visitsCount: visitsDelta >= 0
+          ? { increment: visitsDelta }
+          : { decrement: Math.abs(visitsDelta) },
       },
     });
   }

@@ -1,6 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventsGateway } from '../../common/gateways/events.gateway';
+
+export class CreateReservationDto {
+  branchId?: string;
+  tableId?: string;
+  customerName: string;
+  customerPhone: string;
+  reservedFor: string | Date;
+  partySize?: number;
+  notes?: string;
+}
 
 @Injectable()
 export class TableService {
@@ -98,5 +108,72 @@ export class TableService {
       message: `Официант вызван на ${table.label}`,
       payload,
     };
+  }
+
+  /**
+   * Creates a table reservation (Phase 2 feature).
+   */
+  async createReservation(dto: CreateReservationDto) {
+    if (!dto.customerName || !dto.customerPhone || !dto.reservedFor) {
+      throw new BadRequestException('Имя, телефон и дата/время бронирования обязательны!');
+    }
+
+    let branchId = dto.branchId;
+    if (!branchId) {
+      const branch = await this.prisma.branch.findFirst();
+      if (!branch) throw new NotFoundException('Branch not found');
+      branchId = branch.id;
+    }
+
+    const reservation = await this.prisma.tableReservation.create({
+      data: {
+        branchId,
+        tableId: dto.tableId || null,
+        customerName: dto.customerName.trim(),
+        customerPhone: dto.customerPhone.trim(),
+        reservedFor: new Date(dto.reservedFor),
+        partySize: dto.partySize || 2,
+        notes: dto.notes || null,
+        status: 'CONFIRMED',
+      },
+      include: {
+        table: true,
+        branch: true,
+      },
+    });
+
+    return reservation;
+  }
+
+  /**
+   * Gets list of table reservations.
+   */
+  async getReservations(branchId?: string) {
+    const targetBranch = branchId
+      ? await this.prisma.branch.findUnique({ where: { id: branchId } })
+      : await this.prisma.branch.findFirst();
+
+    if (!targetBranch) return [];
+
+    return await this.prisma.tableReservation.findMany({
+      where: { branchId: targetBranch.id },
+      include: { table: true },
+      orderBy: { reservedFor: 'asc' },
+    });
+  }
+
+  /**
+   * Cancels a table reservation.
+   */
+  async cancelReservation(id: string) {
+    const reservation = await this.prisma.tableReservation.findUnique({ where: { id } });
+    if (!reservation) {
+      throw new NotFoundException(`Reservation ${id} not found.`);
+    }
+
+    return await this.prisma.tableReservation.update({
+      where: { id },
+      data: { status: 'CANCELLED' },
+    });
   }
 }

@@ -28,6 +28,7 @@ model Branch {
   posIntegrations POSIntegration[]
   users           UserBranch[]
   diningTables    DiningTable[]
+  reservations    TableReservation[]
   orders          Order[]
   couriers        Courier[]
   createdAt       DateTime         @default(now())
@@ -35,13 +36,14 @@ model Branch {
 }
 
 model DiningTable {
-  id        String   @id @default(uuid())
-  branchId  String
-  label     String   // e.g. "Стол 7"
-  qrSlug    String   @unique // e.g. "table-7"
-  branch    Branch   @relation(fields: [branchId], references: [id])
-  orders    Order[]
-  createdAt DateTime @default(now())
+  id           String             @id @default(uuid())
+  branchId     String
+  label        String             // e.g. "Стол 7"
+  qrSlug       String             @unique // e.g. "table-7"
+  branch       Branch             @relation(fields: [branchId], references: [id])
+  orders       Order[]
+  reservations TableReservation[]
+  createdAt    DateTime           @default(now())
 }
 
 model Warehouse {
@@ -268,7 +270,7 @@ model Courier {
 model Order {
   id              String       @id @default(uuid())
   branchId        String
-  orderNumber     String       // e.g. "ORD-1001"
+  orderNumber     String       @unique // e.g. "ORD-1001"
   type            String       // "DINE_IN_QR" | "PICKUP" | "DELIVERY" | "POS_CASHIER"
   status          String       @default("NEW") // "NEW" | "ACCEPTED" | "PREPARING" | "READY" | "COMPLETED" | "CANCELLED"
   tableId         String?
@@ -305,3 +307,25 @@ model OrderItem {
   price     Float
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
+
+model OrderCounter {
+  id         String @id @default("ORDER_SEQ")
+  currentVal Int    @default(1000)
+}
+
+model TableReservation {
+  id            String       @id @default(uuid())
+  branchId      String
+  tableId       String?
+  customerName  String
+  customerPhone String
+  reservedFor   DateTime
+  partySize     Int          @default(2)
+  status        String       @default("CONFIRMED") // "CONFIRMED" | "CANCELLED" | "COMPLETED"
+  notes         String?
+  branch        Branch       @relation(fields: [branchId], references: [id])
+  table         DiningTable? @relation(fields: [tableId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+

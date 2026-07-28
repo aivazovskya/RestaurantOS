@@ -56,13 +56,14 @@ export class CouponService {
   /**
    * Validates coupon eligibility and computes discount amount for an order.
    */
-  async validateCoupon(code: string, totalAmount: number, customerId?: string) {
+  async validateCoupon(code: string, totalAmount: number, customerId?: string, txClient?: any) {
     if (!code) {
       throw new BadRequestException('Укажите код купона.');
     }
 
+    const db = txClient || this.prisma;
     const cleanCode = code.trim().toUpperCase();
-    const coupon = await this.prisma.coupon.findUnique({
+    const coupon = await db.coupon.findUnique({
       where: { code: cleanCode },
       include: { customer: true },
     });
@@ -104,15 +105,62 @@ export class CouponService {
   }
 
   /**
+   * Atomically validates and marks a coupon as used to prevent double-redemption races.
+   */
+  async redeemCoupon(code: string, totalAmount: number, customerId?: string, txClient?: any) {
+    const db = txClient || this.prisma;
+    const validated = await this.validateCoupon(code, totalAmount, customerId, db);
+
+    const result = await db.coupon.updateMany({
+      where: {
+        id: validated.couponId,
+        isUsed: false,
+      },
+      data: {
+        isUsed: true,
+        usedAt: new Date(),
+      },
+    });
+
+    if (result.count === 0) {
+      throw new BadRequestException(`Купон "${code}" уже был использован параллельным запросом!`);
+    }
+
+    return validated;
+  }
+
+  /**
    * Marks coupon as used once an order is created or completed.
    */
-  async markCouponUsed(couponId: string) {
-    return await this.prisma.coupon.update({
+  async markCouponUsed(couponId: string, txClient?: any) {
+    const db = txClient || this.prisma;
+    return await db.coupon.update({
       where: { id: couponId },
       data: {
         isUsed: true,
         usedAt: new Date(),
       },
     });
+  }
+
+  /**
+   * Releases (restores) coupon back to unused state if an order is cancelled.
+   */
+  async releaseCoupon(couponId: string, txClient?: any) {
+    if (!couponId) return null;
+    const db = txClient || this.prisma;
+
+    try {
+      return await db.coupon.update({
+        where: { id: couponId },
+        data: {
+          isUsed: false,
+          usedAt: null,
+        },
+      });
+    } catch (e: any) {
+      this.logger.warn(`Failed to release coupon ${couponId}: ${e.message}`);
+      return null;
+    }
   }
 }

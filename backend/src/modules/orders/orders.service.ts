@@ -4,7 +4,7 @@ import { AutoDeductionService } from '../auto-deduction/auto-deduction.service';
 import { StopListService } from '../stop-list/stop-list.service';
 import { EventsGateway } from '../../common/gateways/events.gateway';
 import { CustomerService } from '../customer/customer.service';
-import { LoyaltyService } from '../loyalty/loyalty.service';
+import { LoyaltyService, POINTS_TO_KZT_RATE } from '../loyalty/loyalty.service';
 import { CouponService } from '../coupon/coupon.service';
 import { NotificationService } from '../notification/notification.service';
 
@@ -39,7 +39,7 @@ export class OrdersService {
   ) {}
 
   /**
-   * Creates a new public order from guest (QR-menu or Online app).
+   * Creates a new public order from guest (QR-menu or Online app) inside an atomic transaction.
    * Initial status is NEW (stock deduction does not happen until kitchen ACCEPTED).
    */
   async createPublicOrder(dto: CreateOrderDto) {
@@ -47,128 +47,137 @@ export class OrdersService {
       throw new BadRequestException('Заказ должен содержать хотя бы одну позицию.');
     }
 
-    // Resolve branch and table if QR slug is provided
-    let branch = await this.prisma.branch.findFirst();
-    let table: any = null;
+    return await this.prisma.$transaction(async (tx) => {
+      // Resolve branch and table if QR slug is provided
+      let branch = await tx.branch.findFirst();
+      let table: any = null;
 
-    if (dto.qrSlug) {
-      table = await this.prisma.diningTable.findUnique({
-        where: { qrSlug: dto.qrSlug },
-        include: { branch: true },
+      if (dto.qrSlug) {
+        table = await tx.diningTable.findUnique({
+          where: { qrSlug: dto.qrSlug },
+          include: { branch: true },
+        });
+        if (table && table.branch) {
+          branch = table.branch;
+        }
+      }
+
+      if (!branch) {
+        throw new NotFoundException('Active branch not found for order creation.');
+      }
+
+      const orderType = dto.type || (table ? 'DINE_IN_QR' : 'PICKUP');
+
+      if (orderType === 'DELIVERY') {
+        if (!dto.deliveryAddress || !dto.deliveryAddress.trim()) {
+          throw new BadRequestException('Укажите адрес доставки!');
+        }
+      }
+
+      // Resolve or create Customer if phone provided
+      let customer: any = null;
+      if (dto.customerPhone) {
+        customer = await this.customerService.findOrCreateByPhone(dto.customerPhone, dto.customerName, tx);
+      }
+
+      // Validate item availability & calculate total price
+      let subtotal = 0;
+      const orderItemsData: Array<{ posItemId: string; name: string; quantity: number; price: number }> = [];
+
+      for (const item of dto.items) {
+        const menuItem = await tx.menuItem.findUnique({
+          where: { posItemId: item.posItemId },
+        });
+
+        if (!menuItem) {
+          throw new NotFoundException(`MenuItem with POS ID ${item.posItemId} not found.`);
+        }
+
+        if (!menuItem.isAvailable) {
+          throw new BadRequestException(`Блюдо "${menuItem.name}" находится в стоп-листе и недоступно для заказа.`);
+        }
+
+        const itemTotal = menuItem.sellingPrice * item.quantity;
+        subtotal += itemTotal;
+
+        orderItemsData.push({
+          posItemId: menuItem.posItemId,
+          name: menuItem.name,
+          quantity: item.quantity,
+          price: menuItem.sellingPrice,
+        });
+      }
+
+      // Apply Coupon atomically if provided
+      let discountAmount = 0;
+      let couponId: string | null = null;
+
+      if (dto.couponCode) {
+        const validated = await this.couponService.redeemCoupon(dto.couponCode, subtotal, customer?.id, tx);
+        discountAmount = validated.discountAmount;
+        couponId = validated.couponId;
+      }
+
+      // Calculate final total amount after coupon and loyalty points redemption using explicit conversion rate
+      const appliedPoints = dto.appliedPoints || 0;
+      const pointsInKzt = appliedPoints * POINTS_TO_KZT_RATE;
+
+      if (customer && appliedPoints > 0) {
+        if (customer.loyaltyPoints < appliedPoints) {
+          throw new BadRequestException(`Недостаточно баллов! На балансе: ${customer.loyaltyPoints} Б.`);
+        }
+      }
+
+      const finalTotal = Math.max(0, subtotal - discountAmount - pointsInKzt);
+
+      // Atomic sequential order number generation using OrderCounter
+      const counter = await tx.orderCounter.upsert({
+        where: { id: 'ORDER_SEQ' },
+        create: { id: 'ORDER_SEQ', currentVal: 1001 },
+        update: { currentVal: { increment: 1 } },
       });
-      if (table && table.branch) {
-        branch = table.branch;
-      }
-    }
 
-    if (!branch) {
-      throw new NotFoundException('Active branch not found for order creation.');
-    }
+      const orderNumber = `ORD-${counter.currentVal}`;
 
-    const orderType = dto.type || (table ? 'DINE_IN_QR' : 'PICKUP');
-
-    if (orderType === 'DELIVERY') {
-      if (!dto.deliveryAddress || !dto.deliveryAddress.trim()) {
-        throw new BadRequestException('Укажите адрес доставки!');
-      }
-    }
-
-    // Resolve or create Customer if phone provided
-    let customer: any = null;
-    if (dto.customerPhone) {
-      customer = await this.customerService.findOrCreateByPhone(dto.customerPhone, dto.customerName);
-    }
-
-    // Validate item availability & calculate total price
-    let subtotal = 0;
-    const orderItemsData: Array<{ posItemId: string; name: string; quantity: number; price: number }> = [];
-
-    for (const item of dto.items) {
-      const menuItem = await this.prisma.menuItem.findUnique({
-        where: { posItemId: item.posItemId },
-      });
-
-      if (!menuItem) {
-        throw new NotFoundException(`MenuItem with POS ID ${item.posItemId} not found.`);
-      }
-
-      if (!menuItem.isAvailable) {
-        throw new BadRequestException(`Блюдо "${menuItem.name}" находится в стоп-листе и недоступно для заказа.`);
-      }
-
-      const itemTotal = menuItem.sellingPrice * item.quantity;
-      subtotal += itemTotal;
-
-      orderItemsData.push({
-        posItemId: menuItem.posItemId,
-        name: menuItem.name,
-        quantity: item.quantity,
-        price: menuItem.sellingPrice,
-      });
-    }
-
-    // Apply Coupon if provided
-    let discountAmount = 0;
-    let couponId: string | null = null;
-
-    if (dto.couponCode) {
-      const validated = await this.couponService.validateCoupon(dto.couponCode, subtotal, customer?.id);
-      discountAmount = validated.discountAmount;
-      couponId = validated.couponId;
-      await this.couponService.markCouponUsed(couponId);
-    }
-
-    // Calculate final total amount after coupon and loyalty points redemption
-    const appliedPoints = dto.appliedPoints || 0;
-    if (customer && appliedPoints > 0) {
-      if (customer.loyaltyPoints < appliedPoints) {
-        throw new BadRequestException(`Недостаточно баллов! На балансе: ${customer.loyaltyPoints} Б.`);
-      }
-    }
-
-    const finalTotal = Math.max(0, subtotal - discountAmount - appliedPoints);
-
-    const count = await this.prisma.order.count();
-    const orderNumber = `ORD-${1001 + count}`;
-
-    const order = await this.prisma.order.create({
-      data: {
-        branchId: branch.id,
-        orderNumber,
-        type: orderType,
-        status: 'NEW',
-        tableId: table ? table.id : null,
-        customerId: customer?.id || null,
-        customerPhone: customer?.phone || dto.customerPhone || null,
-        deliveryAddress: orderType === 'DELIVERY' ? dto.deliveryAddress?.trim() : null,
-        deliveryStatus: orderType === 'DELIVERY' ? 'PENDING_ASSIGNMENT' : null,
-        totalAmount: finalTotal,
-        discountAmount,
-        appliedPoints,
-        couponId,
-        comment: dto.comment || (table ? `Заказ со стола ${table.label}` : 'Онлайн-заказ'),
-        items: {
-          create: orderItemsData,
+      const order = await tx.order.create({
+        data: {
+          branchId: branch.id,
+          orderNumber,
+          type: orderType,
+          status: 'NEW',
+          tableId: table ? table.id : null,
+          customerId: customer?.id || null,
+          customerPhone: customer?.phone || dto.customerPhone || null,
+          deliveryAddress: orderType === 'DELIVERY' ? dto.deliveryAddress?.trim() : null,
+          deliveryStatus: orderType === 'DELIVERY' ? 'PENDING_ASSIGNMENT' : null,
+          totalAmount: finalTotal,
+          discountAmount,
+          appliedPoints,
+          couponId,
+          comment: dto.comment || (table ? `Заказ со стола ${table.label}` : 'Онлайн-заказ'),
+          items: {
+            create: orderItemsData,
+          },
         },
-      },
-      include: {
-        items: true,
-        table: true,
-        customer: true,
-        courier: true,
-      },
+        include: {
+          items: true,
+          table: true,
+          customer: true,
+          courier: true,
+        },
+      });
+
+      if (customer && appliedPoints > 0) {
+        await this.loyaltyService.redeemPoints(customer.id, appliedPoints, order.id, order.orderNumber, tx);
+      }
+
+      this.logger.log(`New Order ${order.orderNumber} created in NEW status.`);
+
+      // Broadcast WS event to KDS & Staff
+      this.eventsGateway.emitOrderCreated(branch.id, order);
+
+      return order;
     });
-
-    if (customer && appliedPoints > 0) {
-      await this.loyaltyService.redeemPoints(customer.id, appliedPoints, order.id, order.orderNumber);
-    }
-
-    this.logger.log(`New Order ${order.orderNumber} created in NEW status.`);
-
-    // Broadcast WS event to KDS & Staff
-    this.eventsGateway.emitOrderCreated(branch.id, order);
-
-    return order;
   }
 
   async getOrders(branchId?: string, status?: string) {
@@ -198,6 +207,11 @@ export class OrdersService {
    * Updates order status and manages auto-deduction, customer stats, loyalty points, and stock reversals.
    */
   async updateOrderStatus(orderId: string, status: string) {
+    const validStatuses = ['NEW', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException(`Недопустимый статус заказа: ${status}. Разрешённые: ${validStatuses.join(', ')}`);
+    }
+
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: { items: true, table: true, customer: true },
@@ -263,63 +277,70 @@ export class OrdersService {
       }
     }
 
-    // 4. Transition to CANCELLED: Stock reversal & Customer stats / Loyalty reversal
-    if (status === 'CANCELLED' && ['ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'].includes(previousStatus)) {
-      const deductionMovement = await this.prisma.stockMovement.findFirst({
-        where: { referenceId: `ONLINE-${order.id}` },
-        include: { items: true },
-      });
+    // 4. Transition to CANCELLED: Stock reversal & Customer stats / Loyalty reversal & Coupon release
+    if (status === 'CANCELLED') {
+      // Release coupon if used on this order
+      if (order.couponId) {
+        await this.couponService.releaseCoupon(order.couponId);
+      }
 
-      if (deductionMovement) {
-        const warehouseId = deductionMovement.warehouseId;
-        const reversalItems: Array<{ ingredientId: string; quantity: number; unitCost: number }> = [];
-        const affectedIngredientIds: string[] = [];
+      if (['ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'].includes(previousStatus)) {
+        const deductionMovement = await this.prisma.stockMovement.findFirst({
+          where: { referenceId: `ONLINE-${order.id}` },
+          include: { items: true },
+        });
 
-        for (const item of deductionMovement.items) {
-          const positiveQty = Math.abs(item.quantity);
-          const balance = await this.prisma.stockBalance.findUnique({
-            where: {
-              warehouseId_ingredientId: {
-                warehouseId,
-                ingredientId: item.ingredientId,
+        if (deductionMovement) {
+          const warehouseId = deductionMovement.warehouseId;
+          const reversalItems: Array<{ ingredientId: string; quantity: number; unitCost: number }> = [];
+          const affectedIngredientIds: string[] = [];
+
+          for (const item of deductionMovement.items) {
+            const positiveQty = Math.abs(item.quantity);
+            const balance = await this.prisma.stockBalance.findUnique({
+              where: {
+                warehouseId_ingredientId: {
+                  warehouseId,
+                  ingredientId: item.ingredientId,
+                },
               },
+            });
+
+            if (balance) {
+              await this.prisma.stockBalance.update({
+                where: { id: balance.id },
+                data: { quantity: balance.quantity + positiveQty },
+              });
+            }
+
+            reversalItems.push({
+              ingredientId: item.ingredientId,
+              quantity: positiveQty,
+              unitCost: item.unitCost,
+            });
+
+            affectedIngredientIds.push(item.ingredientId);
+          }
+
+          await this.prisma.stockMovement.create({
+            data: {
+              warehouseId,
+              type: 'ORDER_CANCELLATION_REVERSAL',
+              referenceId: `ONLINE-${order.id}`,
+              comment: `Возврат сырья по отмененному заказу ${order.orderNumber}`,
+              items: { create: reversalItems },
             },
           });
 
-          if (balance) {
-            await this.prisma.stockBalance.update({
-              where: { id: balance.id },
-              data: { quantity: balance.quantity + positiveQty },
-            });
-          }
-
-          reversalItems.push({
-            ingredientId: item.ingredientId,
-            quantity: positiveQty,
-            unitCost: item.unitCost,
-          });
-
-          affectedIngredientIds.push(item.ingredientId);
+          // Recalculate stop-list for restored ingredients
+          await this.stopListService.recalculateForIngredients(affectedIngredientIds, warehouseId);
         }
 
-        await this.prisma.stockMovement.create({
-          data: {
-            warehouseId,
-            type: 'ORDER_CANCELLATION_REVERSAL',
-            referenceId: `ONLINE-${order.id}`,
-            comment: `Возврат сырья по отмененному заказу ${order.orderNumber}`,
-            items: { create: reversalItems },
-          },
-        });
-
-        // Recalculate stop-list for restored ingredients
-        await this.stopListService.recalculateForIngredients(affectedIngredientIds, warehouseId);
-      }
-
-      // Reverse customer stats & loyalty points if order was previously COMPLETED
-      if (previousStatus === 'COMPLETED' && order.customerId) {
-        await this.customerService.updateCustomerStats(order.customerId, -order.totalAmount, -1);
-        await this.loyaltyService.reverseEarnedPoints(order.customerId, order.id, order.orderNumber);
+        // Reverse customer stats & loyalty points if order was previously COMPLETED
+        if (previousStatus === 'COMPLETED' && order.customerId) {
+          await this.customerService.updateCustomerStats(order.customerId, -order.totalAmount, -1);
+          await this.loyaltyService.reverseEarnedPoints(order.customerId, order.id, order.orderNumber);
+        }
       }
     }
 

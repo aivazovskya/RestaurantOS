@@ -6,26 +6,26 @@ export declare class WarehouseController {
         id: string;
         name: string;
         organizationId: string;
+        isSemiFinished: boolean;
         code: string | null;
         category: string;
         mainUnit: string;
         costPerUnit: number;
         minStockLevel: number;
         lossPercentage: number;
-        isSemiFinished: boolean;
         subRecipeId: string | null;
     }[]>;
     createIngredient(data: any): Promise<{
         id: string;
         name: string;
         organizationId: string;
+        isSemiFinished: boolean;
         code: string | null;
         category: string;
         mainUnit: string;
         costPerUnit: number;
         minStockLevel: number;
         lossPercentage: number;
-        isSemiFinished: boolean;
         subRecipeId: string | null;
     }>;
     getBalances(warehouseId?: string): Promise<{
@@ -48,13 +48,13 @@ export declare class WarehouseController {
                 id: string;
                 name: string;
                 organizationId: string;
+                isSemiFinished: boolean;
                 code: string | null;
                 category: string;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
                 lossPercentage: number;
-                isSemiFinished: boolean;
                 subRecipeId: string | null;
             };
         } & {
@@ -66,11 +66,11 @@ export declare class WarehouseController {
         })[];
     } & {
         id: string;
+        type: string;
+        comment: string | null;
         createdAt: Date;
         warehouseId: string;
-        type: string;
         referenceId: string | null;
-        comment: string | null;
     }>;
     addManualWriteOff(dto: any): Promise<{
         items: ({
@@ -78,13 +78,13 @@ export declare class WarehouseController {
                 id: string;
                 name: string;
                 organizationId: string;
+                isSemiFinished: boolean;
                 code: string | null;
                 category: string;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
                 lossPercentage: number;
-                isSemiFinished: boolean;
                 subRecipeId: string | null;
             };
         } & {
@@ -96,11 +96,11 @@ export declare class WarehouseController {
         })[];
     } & {
         id: string;
+        type: string;
+        comment: string | null;
         createdAt: Date;
         warehouseId: string;
-        type: string;
         referenceId: string | null;
-        comment: string | null;
     }>;
     getMovements(): Promise<({
         warehouse: {
@@ -114,13 +114,13 @@ export declare class WarehouseController {
                 id: string;
                 name: string;
                 organizationId: string;
+                isSemiFinished: boolean;
                 code: string | null;
                 category: string;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
                 lossPercentage: number;
-                isSemiFinished: boolean;
                 subRecipeId: string | null;
             };
         } & {
@@ -132,11 +132,11 @@ export declare class WarehouseController {
         })[];
     } & {
         id: string;
+        type: string;
+        comment: string | null;
         createdAt: Date;
         warehouseId: string;
-        type: string;
         referenceId: string | null;
-        comment: string | null;
     })[]>;
     getIncidents(): Promise<{
         id: string;

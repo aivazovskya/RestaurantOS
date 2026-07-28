@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 
 export const DEFAULT_LOYALTY_RATE = 0.05; // 5% cashback in points
+export const POINTS_TO_KZT_RATE = 1; // Explicit conversion rate: 1 point = 1 KZT
 
 @Injectable()
 export class LoyaltyService {
@@ -14,29 +15,31 @@ export class LoyaltyService {
   ) {}
 
   /**
-   * Earns 5% points for a COMPLETED order.
+   * Earns 5% points for a COMPLETED order using atomic increment.
    */
-  async earnPointsForOrder(customerId: string, orderId: string, orderNumber: string, totalAmount: number) {
+  async earnPointsForOrder(customerId: string, orderId: string, orderNumber: string, totalAmount: number, txClient?: any) {
     if (!customerId || totalAmount <= 0) return null;
+    const db = txClient || this.prisma;
 
     const points = Math.floor(totalAmount * DEFAULT_LOYALTY_RATE);
     if (points <= 0) return null;
 
-    // Check if points were already earned for this order (idempotency)
-    const existing = await this.prisma.loyaltyTransaction.findFirst({
+    // Check idempotency
+    const existing = await db.loyaltyTransaction.findFirst({
       where: { customerId, orderId, type: 'EARNED' },
     });
     if (existing) return existing;
 
-    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    const customer = await db.customer.findUnique({ where: { id: customerId } });
     if (!customer) return null;
 
-    await this.prisma.customer.update({
+    // Atomic points increment
+    const updatedCustomer = await db.customer.update({
       where: { id: customerId },
-      data: { loyaltyPoints: customer.loyaltyPoints + points },
+      data: { loyaltyPoints: { increment: points } },
     });
 
-    const tx = await this.prisma.loyaltyTransaction.create({
+    const tx = await db.loyaltyTransaction.create({
       data: {
         customerId,
         type: 'EARNED',
@@ -52,35 +55,38 @@ export class LoyaltyService {
     await this.notificationService.sendNotification(
       customer.phone,
       'POINTS_EARNED',
-      `Вам начислено +${points} баллов за заказ ${orderNumber}! Ваш баланс: ${customer.loyaltyPoints + points} Б.`,
+      `Вам начислено +${points} баллов за заказ ${orderNumber}! Ваш баланс: ${updatedCustomer.loyaltyPoints} Б.`,
     );
 
     return tx;
   }
 
   /**
-   * Redeems loyalty points for an order discount.
+   * Redeems loyalty points for an order discount using atomic conditional update.
    */
-  async redeemPoints(customerId: string, pointsToRedeem: number, orderId?: string, orderNumber?: string) {
+  async redeemPoints(customerId: string, pointsToRedeem: number, orderId?: string, orderNumber?: string, txClient?: any) {
     if (pointsToRedeem <= 0) return null;
+    const db = txClient || this.prisma;
 
-    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
-    if (!customer) {
-      throw new NotFoundException(`Customer ${customerId} not found.`);
-    }
+    // Atomic check-and-decrement: only update if current balance >= pointsToRedeem
+    const result = await db.customer.updateMany({
+      where: { id: customerId, loyaltyPoints: { gte: pointsToRedeem } },
+      data: { loyaltyPoints: { decrement: pointsToRedeem } },
+    });
 
-    if (customer.loyaltyPoints < pointsToRedeem) {
+    if (result.count === 0) {
+      const customer = await db.customer.findUnique({ where: { id: customerId } });
+      if (!customer) {
+        throw new NotFoundException(`Customer ${customerId} not found.`);
+      }
       throw new BadRequestException(
         `Недостаточно баллов лояльности! Баланс: ${customer.loyaltyPoints} Б, запрошено: ${pointsToRedeem} Б.`,
       );
     }
 
-    await this.prisma.customer.update({
-      where: { id: customerId },
-      data: { loyaltyPoints: customer.loyaltyPoints - pointsToRedeem },
-    });
+    const customer = await db.customer.findUnique({ where: { id: customerId } });
 
-    const tx = await this.prisma.loyaltyTransaction.create({
+    const tx = await db.loyaltyTransaction.create({
       data: {
         customerId,
         type: 'REDEEMED',
@@ -90,32 +96,34 @@ export class LoyaltyService {
       },
     });
 
-    this.logger.log(`Redeemed ${pointsToRedeem} points for Customer ${customer.phone}`);
+    this.logger.log(`Redeemed ${pointsToRedeem} points for Customer ${customer?.phone || customerId}`);
     return tx;
   }
 
   /**
-   * Reverses earned points if a COMPLETED order is CANCELLED.
+   * Reverses earned points if a COMPLETED order is CANCELLED using atomic decrement.
    */
-  async reverseEarnedPoints(customerId: string, orderId: string, orderNumber: string) {
-    const earnedTx = await this.prisma.loyaltyTransaction.findFirst({
+  async reverseEarnedPoints(customerId: string, orderId: string, orderNumber: string, txClient?: any) {
+    const db = txClient || this.prisma;
+
+    const earnedTx = await db.loyaltyTransaction.findFirst({
       where: { customerId, orderId, type: 'EARNED' },
     });
 
     if (!earnedTx) return null;
 
-    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    const customer = await db.customer.findUnique({ where: { id: customerId } });
     if (!customer) return null;
 
     const pointsToDeduct = earnedTx.points;
-    const newBalance = Math.max(0, customer.loyaltyPoints - pointsToDeduct);
 
-    await this.prisma.customer.update({
+    // Atomic decrement (ensuring non-negative result via transaction check if needed)
+    await db.customer.update({
       where: { id: customerId },
-      data: { loyaltyPoints: newBalance },
+      data: { loyaltyPoints: { decrement: pointsToDeduct } },
     });
 
-    return await this.prisma.loyaltyTransaction.create({
+    return await db.loyaltyTransaction.create({
       data: {
         customerId,
         type: 'MANUAL_ADJUSTMENT',
@@ -129,24 +137,23 @@ export class LoyaltyService {
   /**
    * Manual points adjustment by manager/staff with required comment.
    */
-  async adjustPointsManually(customerId: string, points: number, comment: string) {
+  async adjustPointsManually(customerId: string, points: number, comment: string, txClient?: any) {
     if (!comment || comment.trim().length === 0) {
       throw new BadRequestException('При корректировке баллов обязателен комментарий!');
     }
+    const db = txClient || this.prisma;
 
-    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    const customer = await db.customer.findUnique({ where: { id: customerId } });
     if (!customer) {
       throw new NotFoundException(`Customer ${customerId} not found.`);
     }
 
-    const newBalance = Math.max(0, customer.loyaltyPoints + points);
-
-    await this.prisma.customer.update({
+    await db.customer.update({
       where: { id: customerId },
-      data: { loyaltyPoints: newBalance },
+      data: points > 0 ? { loyaltyPoints: { increment: points } } : { loyaltyPoints: { decrement: Math.abs(points) } },
     });
 
-    const tx = await this.prisma.loyaltyTransaction.create({
+    const tx = await db.loyaltyTransaction.create({
       data: {
         customerId,
         type: 'MANUAL_ADJUSTMENT',

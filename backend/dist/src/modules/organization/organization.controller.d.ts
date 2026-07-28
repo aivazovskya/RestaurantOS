@@ -13,8 +13,8 @@ export declare class OrganizationController {
                 }[];
             } & {
                 id: string;
-                name: string;
                 createdAt: Date;
+                name: string;
                 updatedAt: Date;
                 address: string | null;
                 phone: string | null;
@@ -22,9 +22,9 @@ export declare class OrganizationController {
             })[];
         } & {
             id: string;
+            createdAt: Date;
             name: string;
             bin: string | null;
-            createdAt: Date;
             updatedAt: Date;
         }) | null;
         stats: {
@@ -42,13 +42,13 @@ export declare class OrganizationController {
                     id: string;
                     name: string;
                     organizationId: string;
+                    isSemiFinished: boolean;
                     code: string | null;
                     category: string;
                     mainUnit: string;
                     costPerUnit: number;
                     minStockLevel: number;
                     lossPercentage: number;
-                    isSemiFinished: boolean;
                     subRecipeId: string | null;
                 };
             } & {
@@ -60,11 +60,11 @@ export declare class OrganizationController {
             })[];
         } & {
             id: string;
+            type: string;
+            comment: string | null;
             createdAt: Date;
             warehouseId: string;
-            type: string;
             referenceId: string | null;
-            comment: string | null;
         })[];
     }>;
 }

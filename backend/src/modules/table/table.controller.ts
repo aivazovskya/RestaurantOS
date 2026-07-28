@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Param } from '@nestjs/common';
-import { TableService } from './table.service';
+import { Controller, Get, Post, Patch, Param, Body, Query } from '@nestjs/common';
+import { TableService, CreateReservationDto } from './table.service';
 
 @Controller('api/v1')
 export class TableController {
@@ -18,5 +18,20 @@ export class TableController {
   @Post('public/tables/:qrSlug/call-waiter')
   async callWaiter(@Param('qrSlug') qrSlug: string) {
     return await this.tableService.callWaiter(qrSlug);
+  }
+
+  @Post('tables/reservations')
+  async createReservation(@Body() dto: CreateReservationDto) {
+    return await this.tableService.createReservation(dto);
+  }
+
+  @Get('tables/reservations')
+  async getReservations(@Query('branchId') branchId?: string) {
+    return await this.tableService.getReservations(branchId);
+  }
+
+  @Patch('tables/reservations/:id/cancel')
+  async cancelReservation(@Param('id') id: string) {
+    return await this.tableService.cancelReservation(id);
   }
 }

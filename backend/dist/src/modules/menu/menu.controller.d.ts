@@ -11,13 +11,13 @@ export declare class MenuController {
                     id: string;
                     name: string;
                     organizationId: string;
+                    isSemiFinished: boolean;
                     code: string | null;
                     category: string;
                     mainUnit: string;
                     costPerUnit: number;
                     minStockLevel: number;
                     lossPercentage: number;
-                    isSemiFinished: boolean;
                     subRecipeId: string | null;
                 };
             } & {
@@ -37,8 +37,8 @@ export declare class MenuController {
             menuItemId: string | null;
         }) | null;
         id: string;
-        name: string;
         createdAt: Date;
+        name: string;
         organizationId: string;
         category: string;
         posItemId: string;
@@ -52,8 +52,8 @@ export declare class MenuController {
     }[]>;
     createMenuItem(data: any): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
+        name: string;
         organizationId: string;
         category: string;
         posItemId: string;
@@ -73,13 +73,13 @@ export declare class MenuController {
                 id: string;
                 name: string;
                 organizationId: string;
+                isSemiFinished: boolean;
                 code: string | null;
                 category: string;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
                 lossPercentage: number;
-                isSemiFinished: boolean;
                 subRecipeId: string | null;
             };
         } & {

@@ -166,6 +166,7 @@ export class StopListService {
     isAvailable: boolean,
     reason?: string,
     userId?: string,
+    branchId?: string,
   ) {
     const menuItem = await this.prisma.menuItem.findUnique({
       where: { id: menuItemId },
@@ -199,11 +200,16 @@ export class StopListService {
       },
     });
 
-    // Resolve branch ID for WS broadcast
-    const branch = await this.prisma.branch.findFirst();
-    const branchId = branch ? branch.id : 'default-branch';
+    // Resolve specific branch ID for WS broadcast
+    let targetBranchId = branchId;
+    if (!targetBranchId) {
+      const branch = await this.prisma.branch.findFirst({
+        where: { organizationId: menuItem.organizationId },
+      }) || await this.prisma.branch.findFirst();
+      targetBranchId = branch ? branch.id : 'default-branch';
+    }
 
-    this.eventsGateway.emitStopListChanged(branchId, {
+    this.eventsGateway.emitStopListChanged(targetBranchId, {
       menuItemId: menuItem.id,
       posItemId: menuItem.posItemId,
       isAvailable,
