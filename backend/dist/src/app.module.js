@@ -18,6 +18,10 @@ const nexium_pos_module_1 = require("./modules/nexium-pos/nexium-pos.module");
 const stop_list_module_1 = require("./modules/stop-list/stop-list.module");
 const table_module_1 = require("./modules/table/table.module");
 const orders_module_1 = require("./modules/orders/orders.module");
+const customer_module_1 = require("./modules/customer/customer.module");
+const loyalty_module_1 = require("./modules/loyalty/loyalty.module");
+const coupon_module_1 = require("./modules/coupon/coupon.module");
+const notification_module_1 = require("./modules/notification/notification.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -33,6 +37,10 @@ exports.AppModule = AppModule = __decorate([
             stop_list_module_1.StopListModule,
             table_module_1.TableModule,
             orders_module_1.OrdersModule,
+            customer_module_1.CustomerModule,
+            loyalty_module_1.LoyaltyModule,
+            coupon_module_1.CouponModule,
+            notification_module_1.NotificationModule,
         ],
         providers: [seed_service_1.SeedService],
     })

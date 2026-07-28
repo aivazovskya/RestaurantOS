@@ -12,6 +12,10 @@ export class ProcessPosReceiptDto {
   posHardwareId?: string;
   tableNumber?: string;
   waiterName?: string;
+  customerPhone?: string;
+  customerName?: string;
+  appliedPoints?: number;
+  couponCode?: string;
   totalAmount: number;
   paymentType?: string;
   items: PosReceiptItemDto[];

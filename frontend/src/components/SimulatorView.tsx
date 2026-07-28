@@ -15,6 +15,9 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({ menuItems, onRecei
 
   const [tableNumber, setTableNumber] = useState('Стол 7');
   const [paymentType, setPaymentType] = useState('KASPI_QR');
+  const [customerPhone, setCustomerPhone] = useState('+77015550101');
+  const [appliedPoints, setAppliedPoints] = useState<number>(0);
+  const [couponCode, setCouponCode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
 
@@ -47,6 +50,9 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({ menuItems, onRecei
       receiptId: `REC-KZ-${Math.floor(10000 + Math.random() * 90000)}`,
       tableNumber,
       paymentType,
+      customerPhone: customerPhone || undefined,
+      appliedPoints: appliedPoints > 0 ? appliedPoints : undefined,
+      couponCode: couponCode ? couponCode.trim() : undefined,
       totalAmount,
       items: Object.entries(cart).map(([posItemId, item]) => ({
         posItemId,
@@ -87,7 +93,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({ menuItems, onRecei
             <span className="badge badge-info">Nexium v4.2 Emulator</span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
             <div>
               <label className="form-label">Стол / Заказ</label>
               <input className="form-input" value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} />
@@ -99,6 +105,27 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({ menuItems, onRecei
                 <option value="CARD">Банковская карта</option>
                 <option value="CASH">Наличные</option>
               </select>
+            </div>
+          </div>
+
+          {/* CRM & Loyalty Integration Inputs */}
+          <div style={{ background: '#090d14', padding: '14px', borderRadius: '10px', border: '1px solid var(--color-border)', marginBottom: '20px' }}>
+            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-signal-blue)', marginBottom: '10px' }}>
+              👤 CRM & Лояльность (Идентификация гостя на кассе)
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+              <div>
+                <label className="form-label">Телефон гостя</label>
+                <input className="form-input" placeholder="+77015550101" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+              </div>
+              <div>
+                <label className="form-label">Списать баллы (Б)</label>
+                <input type="number" className="form-input" placeholder="0" value={appliedPoints} onChange={(e) => setAppliedPoints(parseInt(e.target.value, 10) || 0)} />
+              </div>
+              <div>
+                <label className="form-label">Промокод</label>
+                <input className="form-input" placeholder="WELCOME10" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} style={{ textTransform: 'uppercase' }} />
+              </div>
             </div>
           </div>
 

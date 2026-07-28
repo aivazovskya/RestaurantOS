@@ -10,6 +10,7 @@ export declare class NexiumPosController {
         receiptId?: undefined;
         warehouseId?: undefined;
         warehouseName?: undefined;
+        orderId?: undefined;
         deductedIngredientsCount?: undefined;
         deductions?: undefined;
         incidents?: undefined;
@@ -20,6 +21,7 @@ export declare class NexiumPosController {
         movementId?: undefined;
         warehouseId?: undefined;
         warehouseName?: undefined;
+        orderId?: undefined;
         deductedIngredientsCount?: undefined;
         deductions?: undefined;
         incidents?: undefined;
@@ -29,6 +31,7 @@ export declare class NexiumPosController {
         warehouseId: string;
         warehouseName: string;
         movementId: string;
+        orderId: any;
         deductedIngredientsCount: number;
         deductions: {
             ingredientId: string;
@@ -53,6 +56,7 @@ export declare class NexiumPosController {
         receiptId?: undefined;
         warehouseId?: undefined;
         warehouseName?: undefined;
+        orderId?: undefined;
         deductedIngredientsCount?: undefined;
         deductions?: undefined;
         incidents?: undefined;
@@ -63,6 +67,7 @@ export declare class NexiumPosController {
         movementId?: undefined;
         warehouseId?: undefined;
         warehouseName?: undefined;
+        orderId?: undefined;
         deductedIngredientsCount?: undefined;
         deductions?: undefined;
         incidents?: undefined;
@@ -72,6 +77,7 @@ export declare class NexiumPosController {
         warehouseId: string;
         warehouseName: string;
         movementId: string;
+        orderId: any;
         deductedIngredientsCount: number;
         deductions: {
             ingredientId: string;

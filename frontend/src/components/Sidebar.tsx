@@ -8,7 +8,8 @@ import {
   ChefHat, 
   ShoppingBag, 
   QrCode,
-  ShieldCheck
+  ShieldCheck,
+  Users
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -19,6 +20,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
+    { id: 'crm', label: 'CRM и Лояльность', icon: Users },
     { id: 'warehouse', label: 'Склад и Остатки', icon: Warehouse },
     { id: 'menu', label: 'Меню и Техкарты', icon: BookOpen },
     { id: 'kds', label: 'KDS (Экран кухни)', icon: ChefHat },

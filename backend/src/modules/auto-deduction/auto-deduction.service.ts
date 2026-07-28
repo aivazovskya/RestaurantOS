@@ -3,6 +3,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ProcessPosReceiptDto } from './dto/process-receipt.dto';
 import { RecipeResolverService } from '../../common/services/recipe-resolver.service';
 import { StopListService } from '../stop-list/stop-list.service';
+import { CustomerService } from '../customer/customer.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
+import { CouponService } from '../coupon/coupon.service';
 
 @Injectable()
 export class AutoDeductionService {
@@ -12,6 +15,9 @@ export class AutoDeductionService {
     private readonly prisma: PrismaService,
     private readonly recipeResolver: RecipeResolverService,
     private readonly stopListService: StopListService,
+    private readonly customerService: CustomerService,
+    private readonly loyaltyService: LoyaltyService,
+    private readonly couponService: CouponService,
   ) {}
 
   async processReceipt(payload: ProcessPosReceiptDto) {
@@ -189,12 +195,100 @@ export class AutoDeductionService {
       warehouse.id,
     );
 
+    // 7. Unified Order Record for POS Cashier sales & Customer Loyalty linking
+    let createdOrder: any = null;
+    if (!payload.receiptId.startsWith('ONLINE-')) {
+      let customer: any = null;
+      if (payload.customerPhone) {
+        customer = await this.customerService.findOrCreateByPhone(
+          payload.customerPhone,
+          payload.customerName,
+        );
+      }
+
+      let discountAmount = 0;
+      let couponId: string | null = null;
+
+      if (payload.couponCode) {
+        try {
+          const validated = await this.couponService.validateCoupon(
+            payload.couponCode,
+            payload.totalAmount,
+            customer?.id,
+          );
+          discountAmount = validated.discountAmount;
+          couponId = validated.couponId;
+          await this.couponService.markCouponUsed(validated.couponId);
+        } catch (e: any) {
+          this.logger.warn(`Coupon validation failed for receipt ${payload.receiptId}: ${e.message}`);
+        }
+      }
+
+      const count = await this.prisma.order.count();
+      const orderNumber = `POS-${1001 + count}`;
+
+      const orderItems = (payload.items || []).map((i) => ({
+        posItemId: i.posItemId,
+        name: i.name,
+        quantity: i.quantity,
+        price: i.price,
+      }));
+
+      const finalAmount = Math.max(0, payload.totalAmount - discountAmount - (payload.appliedPoints || 0));
+
+      createdOrder = await this.prisma.order.create({
+        data: {
+          branchId: warehouse.branchId,
+          orderNumber,
+          type: 'POS_CASHIER',
+          status: 'COMPLETED',
+          customerId: customer?.id || null,
+          customerPhone: customer?.phone || payload.customerPhone || null,
+          totalAmount: finalAmount,
+          discountAmount,
+          appliedPoints: payload.appliedPoints || 0,
+          couponId,
+          comment: `Чек кассы Nexium ${payload.receiptId} (Стол: ${payload.tableNumber || 'Касса'})`,
+          items: {
+            create: orderItems,
+          },
+        },
+      });
+
+      if (customer) {
+        if (payload.appliedPoints && payload.appliedPoints > 0) {
+          try {
+            await this.loyaltyService.redeemPoints(
+              customer.id,
+              payload.appliedPoints,
+              createdOrder.id,
+              createdOrder.orderNumber,
+            );
+          } catch (e: any) {
+            this.logger.warn(`Failed to redeem points for POS receipt ${payload.receiptId}: ${e.message}`);
+          }
+        }
+
+        // Increment customer aggregate stats
+        await this.customerService.updateCustomerStats(customer.id, finalAmount, 1);
+
+        // Earn loyalty points (5%)
+        await this.loyaltyService.earnPointsForOrder(
+          customer.id,
+          createdOrder.id,
+          createdOrder.orderNumber,
+          finalAmount,
+        );
+      }
+    }
+
     return {
       status: 'SUCCESS',
       receiptId: payload.receiptId,
       warehouseId: warehouse.id,
       warehouseName: warehouse.name,
       movementId: movement.id,
+      orderId: createdOrder?.id || null,
       deductedIngredientsCount: deductionsMap.size,
       deductions: Array.from(deductionsMap.values()),
       incidents: incidentsList,

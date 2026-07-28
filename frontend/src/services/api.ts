@@ -144,3 +144,80 @@ export async function updateOrderStatus(orderId: string, status: string) {
   }
   return await res.json();
 }
+
+/* Phase 3: CRM & Loyalty APIs */
+export async function fetchCustomers(search?: string) {
+  const url = search ? `${API_BASE}/customers?search=${encodeURIComponent(search)}` : `${API_BASE}/customers`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+export async function fetchCustomerById(id: string) {
+  const res = await fetch(`${API_BASE}/customers/${id}`);
+  return await res.json();
+}
+
+export async function findOrCreateCustomerByPhone(phone: string, name?: string) {
+  const res = await fetch(`${API_BASE}/customers/by-phone`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, name }),
+  });
+  return await res.json();
+}
+
+export async function fetchLoyaltyHistory(customerId: string) {
+  const res = await fetch(`${API_BASE}/customers/${customerId}/loyalty/history`);
+  return await res.json();
+}
+
+export async function adjustLoyaltyPoints(customerId: string, points: number, comment: string) {
+  const res = await fetch(`${API_BASE}/customers/${customerId}/loyalty/adjust`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ points, comment }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Ошибка корректировки баллов');
+  }
+  return await res.json();
+}
+
+/* Phase 3: Coupon APIs */
+export async function fetchCoupons() {
+  const res = await fetch(`${API_BASE}/coupons`);
+  return await res.json();
+}
+
+export async function createCoupon(data: { code: string; discountType: string; discountValue: number; customerId?: string; expiresAt?: string }) {
+  const res = await fetch(`${API_BASE}/coupons`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Ошибка создания купона');
+  }
+  return await res.json();
+}
+
+export async function validateCoupon(code: string, totalAmount: number, customerId?: string) {
+  const res = await fetch(`${API_BASE}/coupons/validate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, totalAmount, customerId }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Купон недействителен');
+  }
+  return await res.json();
+}
+
+/* Phase 3: Notification Log APIs */
+export async function fetchNotificationLogs() {
+  const res = await fetch(`${API_BASE}/notifications/logs`);
+  return await res.json();
+}

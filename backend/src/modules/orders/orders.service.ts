@@ -3,11 +3,18 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AutoDeductionService } from '../auto-deduction/auto-deduction.service';
 import { StopListService } from '../stop-list/stop-list.service';
 import { EventsGateway } from '../../common/gateways/events.gateway';
+import { CustomerService } from '../customer/customer.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
+import { CouponService } from '../coupon/coupon.service';
+import { NotificationService } from '../notification/notification.service';
 
 export class CreateOrderDto {
   qrSlug?: string;
   type?: 'DINE_IN_QR' | 'PICKUP' | 'DELIVERY';
   customerPhone?: string;
+  customerName?: string;
+  appliedPoints?: number;
+  couponCode?: string;
   comment?: string;
   items: Array<{
     posItemId: string;
@@ -24,6 +31,10 @@ export class OrdersService {
     private readonly autoDeductionService: AutoDeductionService,
     private readonly stopListService: StopListService,
     private readonly eventsGateway: EventsGateway,
+    private readonly customerService: CustomerService,
+    private readonly loyaltyService: LoyaltyService,
+    private readonly couponService: CouponService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   /**
@@ -53,8 +64,14 @@ export class OrdersService {
       throw new NotFoundException('Active branch not found for order creation.');
     }
 
+    // Resolve or create Customer if phone provided
+    let customer: any = null;
+    if (dto.customerPhone) {
+      customer = await this.customerService.findOrCreateByPhone(dto.customerPhone, dto.customerName);
+    }
+
     // Validate item availability & calculate total price
-    let totalAmount = 0;
+    let subtotal = 0;
     const orderItemsData: Array<{ posItemId: string; name: string; quantity: number; price: number }> = [];
 
     for (const item of dto.items) {
@@ -71,7 +88,7 @@ export class OrdersService {
       }
 
       const itemTotal = menuItem.sellingPrice * item.quantity;
-      totalAmount += itemTotal;
+      subtotal += itemTotal;
 
       orderItemsData.push({
         posItemId: menuItem.posItemId,
@@ -80,6 +97,27 @@ export class OrdersService {
         price: menuItem.sellingPrice,
       });
     }
+
+    // Apply Coupon if provided
+    let discountAmount = 0;
+    let couponId: string | null = null;
+
+    if (dto.couponCode) {
+      const validated = await this.couponService.validateCoupon(dto.couponCode, subtotal, customer?.id);
+      discountAmount = validated.discountAmount;
+      couponId = validated.couponId;
+      await this.couponService.markCouponUsed(couponId);
+    }
+
+    // Calculate final total amount after coupon and loyalty points redemption
+    const appliedPoints = dto.appliedPoints || 0;
+    if (customer && appliedPoints > 0) {
+      if (customer.loyaltyPoints < appliedPoints) {
+        throw new BadRequestException(`Недостаточно баллов! На балансе: ${customer.loyaltyPoints} Б.`);
+      }
+    }
+
+    const finalTotal = Math.max(0, subtotal - discountAmount - appliedPoints);
 
     const count = await this.prisma.order.count();
     const orderNumber = `ORD-${1001 + count}`;
@@ -91,8 +129,12 @@ export class OrdersService {
         type: dto.type || (table ? 'DINE_IN_QR' : 'PICKUP'),
         status: 'NEW',
         tableId: table ? table.id : null,
-        customerPhone: dto.customerPhone || null,
-        totalAmount,
+        customerId: customer?.id || null,
+        customerPhone: customer?.phone || dto.customerPhone || null,
+        totalAmount: finalTotal,
+        discountAmount,
+        appliedPoints,
+        couponId,
         comment: dto.comment || (table ? `Заказ со стола ${table.label}` : 'Онлайн-заказ'),
         items: {
           create: orderItemsData,
@@ -101,8 +143,13 @@ export class OrdersService {
       include: {
         items: true,
         table: true,
+        customer: true,
       },
     });
+
+    if (customer && appliedPoints > 0) {
+      await this.loyaltyService.redeemPoints(customer.id, appliedPoints, order.id, order.orderNumber);
+    }
 
     this.logger.log(`New Order ${order.orderNumber} created in NEW status.`);
 
@@ -127,6 +174,7 @@ export class OrdersService {
       include: {
         items: true,
         table: true,
+        customer: true,
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
@@ -134,12 +182,12 @@ export class OrdersService {
   }
 
   /**
-   * Updates order status and manages auto-deduction and stock reversals.
+   * Updates order status and manages auto-deduction, customer stats, loyalty points, and stock reversals.
    */
   async updateOrderStatus(orderId: string, status: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true, table: true },
+      include: { items: true, table: true, customer: true },
     });
 
     if (!order) {
@@ -167,6 +215,7 @@ export class OrdersService {
         tableNumber: order.table ? order.table.label : 'Онлайн-заказ',
         paymentType: 'ONLINE_ORDER',
         totalAmount: order.totalAmount,
+        customerPhone: order.customerPhone || undefined,
         items: order.items.map((i) => ({
           posItemId: i.posItemId,
           name: i.name,
@@ -176,7 +225,32 @@ export class OrdersService {
       });
     }
 
-    // 2. Transition to CANCELLED (if order was previously ACCEPTED or later): Perform Stock Reversal
+    // 2. Notification on READY status for PICKUP / DINE_IN
+    if (status === 'READY' && order.customerPhone) {
+      await this.notificationService.sendNotification(
+        order.customerPhone,
+        'ORDER_READY',
+        `Ваш заказ ${order.orderNumber} готов к выдаче! Приятного аппетита.`,
+      );
+    }
+
+    // 3. Transition to COMPLETED: Increment customer stats & Earn 5% loyalty points
+    if (status === 'COMPLETED' && previousStatus !== 'COMPLETED') {
+      let customerId = order.customerId;
+      if (!customerId && order.customerPhone) {
+        const c = await this.customerService.findOrCreateByPhone(order.customerPhone);
+        if (c) customerId = c.id;
+      }
+
+      if (customerId) {
+        // Increment totalSpent & visitsCount
+        await this.customerService.updateCustomerStats(customerId, order.totalAmount, 1);
+        // Earn loyalty points
+        await this.loyaltyService.earnPointsForOrder(customerId, order.id, order.orderNumber, order.totalAmount);
+      }
+    }
+
+    // 4. Transition to CANCELLED: Stock reversal & Customer stats / Loyalty reversal
     if (status === 'CANCELLED' && ['ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'].includes(previousStatus)) {
       const deductionMovement = await this.prisma.stockMovement.findFirst({
         where: { referenceId: `ONLINE-${order.id}` },
@@ -228,13 +302,19 @@ export class OrdersService {
         // Recalculate stop-list for restored ingredients
         await this.stopListService.recalculateForIngredients(affectedIngredientIds, warehouseId);
       }
+
+      // Reverse customer stats & loyalty points if order was previously COMPLETED
+      if (previousStatus === 'COMPLETED' && order.customerId) {
+        await this.customerService.updateCustomerStats(order.customerId, -order.totalAmount, -1);
+        await this.loyaltyService.reverseEarnedPoints(order.customerId, order.id, order.orderNumber);
+      }
     }
 
     // Update order record
     const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
-      data: { status },
-      include: { items: true, table: true },
+      data: { status, customerId: order.customerId },
+      include: { items: true, table: true, customer: true },
     });
 
     // Broadcast WS event

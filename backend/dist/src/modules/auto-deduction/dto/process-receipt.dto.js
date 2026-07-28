@@ -15,6 +15,10 @@ class ProcessPosReceiptDto {
     posHardwareId;
     tableNumber;
     waiterName;
+    customerPhone;
+    customerName;
+    appliedPoints;
+    couponCode;
     totalAmount;
     paymentType;
     items;

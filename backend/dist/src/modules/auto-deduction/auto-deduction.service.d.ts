@@ -2,12 +2,18 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ProcessPosReceiptDto } from './dto/process-receipt.dto';
 import { RecipeResolverService } from '../../common/services/recipe-resolver.service';
 import { StopListService } from '../stop-list/stop-list.service';
+import { CustomerService } from '../customer/customer.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
+import { CouponService } from '../coupon/coupon.service';
 export declare class AutoDeductionService {
     private readonly prisma;
     private readonly recipeResolver;
     private readonly stopListService;
+    private readonly customerService;
+    private readonly loyaltyService;
+    private readonly couponService;
     private readonly logger;
-    constructor(prisma: PrismaService, recipeResolver: RecipeResolverService, stopListService: StopListService);
+    constructor(prisma: PrismaService, recipeResolver: RecipeResolverService, stopListService: StopListService, customerService: CustomerService, loyaltyService: LoyaltyService, couponService: CouponService);
     processReceipt(payload: ProcessPosReceiptDto): Promise<{
         status: string;
         message: string;
@@ -15,6 +21,7 @@ export declare class AutoDeductionService {
         receiptId?: undefined;
         warehouseId?: undefined;
         warehouseName?: undefined;
+        orderId?: undefined;
         deductedIngredientsCount?: undefined;
         deductions?: undefined;
         incidents?: undefined;
@@ -25,6 +32,7 @@ export declare class AutoDeductionService {
         movementId?: undefined;
         warehouseId?: undefined;
         warehouseName?: undefined;
+        orderId?: undefined;
         deductedIngredientsCount?: undefined;
         deductions?: undefined;
         incidents?: undefined;
@@ -34,6 +42,7 @@ export declare class AutoDeductionService {
         warehouseId: string;
         warehouseName: string;
         movementId: string;
+        orderId: any;
         deductedIngredientsCount: number;
         deductions: {
             ingredientId: string;

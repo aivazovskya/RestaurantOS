@@ -9,10 +9,10 @@ export declare class MenuController {
             items: ({
                 ingredient: {
                     id: string;
-                    organizationId: string;
                     name: string;
-                    category: string;
+                    organizationId: string;
                     code: string | null;
+                    category: string;
                     mainUnit: string;
                     costPerUnit: number;
                     minStockLevel: number;
@@ -22,48 +22,48 @@ export declare class MenuController {
                 };
             } & {
                 id: string;
-                recipeCardId: string;
                 ingredientId: string;
                 grossAmount: number;
                 netAmount: number;
                 unit: string;
+                recipeCardId: string;
             })[];
         } & {
             id: string;
             createdAt: Date;
-            menuItemId: string | null;
+            updatedAt: Date;
             yieldAmount: number;
             yieldUnit: string;
-            updatedAt: Date;
+            menuItemId: string | null;
         }) | null;
-        description: string | null;
         id: string;
-        posItemId: string;
-        organizationId: string;
         name: string;
+        createdAt: Date;
+        organizationId: string;
         category: string;
+        posItemId: string;
+        description: string | null;
         sellingPrice: number;
         imageUrl: string | null;
         isAvailable: boolean;
         stopListSource: string | null;
         stopListReason: string | null;
         stopListUpdatedAt: Date | null;
-        createdAt: Date;
     }[]>;
     createMenuItem(data: any): Promise<{
-        description: string | null;
         id: string;
-        posItemId: string;
-        organizationId: string;
         name: string;
+        createdAt: Date;
+        organizationId: string;
         category: string;
+        posItemId: string;
+        description: string | null;
         sellingPrice: number;
         imageUrl: string | null;
         isAvailable: boolean;
         stopListSource: string | null;
         stopListReason: string | null;
         stopListUpdatedAt: Date | null;
-        createdAt: Date;
     }>;
     saveRecipeCard(menuItemId: string, body: {
         recipeItems: any[];
@@ -71,10 +71,10 @@ export declare class MenuController {
         items: ({
             ingredient: {
                 id: string;
-                organizationId: string;
                 name: string;
-                category: string;
+                organizationId: string;
                 code: string | null;
+                category: string;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
@@ -84,18 +84,18 @@ export declare class MenuController {
             };
         } & {
             id: string;
-            recipeCardId: string;
             ingredientId: string;
             grossAmount: number;
             netAmount: number;
             unit: string;
+            recipeCardId: string;
         })[];
     } & {
         id: string;
         createdAt: Date;
-        menuItemId: string | null;
+        updatedAt: Date;
         yieldAmount: number;
         yieldUnit: string;
-        updatedAt: Date;
+        menuItemId: string | null;
     }>;
 }

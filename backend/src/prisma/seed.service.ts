@@ -243,6 +243,45 @@ export class SeedService implements OnApplicationBootstrap {
       },
     });
 
-    this.logger.log('Demo data successfully seeded for Restaurant OS Kazakhstan!');
+    // 5. Create Demo Customers & Loyalty Profiles
+    const customer1 = await this.prisma.customer.create({
+      data: {
+        phone: '+77015550101',
+        name: 'Арман Нурланов',
+        loyaltyPoints: 1250,
+        totalSpent: 45000,
+        visitsCount: 8,
+      },
+    });
+
+    const customer2 = await this.prisma.customer.create({
+      data: {
+        phone: '+77771234567',
+        name: 'Айгерим Бекова',
+        loyaltyPoints: 450,
+        totalSpent: 15000,
+        visitsCount: 3,
+      },
+    });
+
+    // Seed Loyalty Transactions history
+    await this.prisma.loyaltyTransaction.createMany({
+      data: [
+        { customerId: customer1.id, type: 'EARNED', points: 750, comment: 'Приветственный бонус за подписку' },
+        { customerId: customer1.id, type: 'EARNED', points: 500, comment: 'Начисление 5% за визит' },
+        { customerId: customer2.id, type: 'EARNED', points: 450, comment: 'Начисление 5% за первый заказ' },
+      ],
+    });
+
+    // 6. Create Demo Coupons
+    await this.prisma.coupon.createMany({
+      data: [
+        { code: 'WELCOME10', discountType: 'PERCENT', discountValue: 10 },
+        { code: 'KZVIP500', discountType: 'FIXED_AMOUNT', discountValue: 500 },
+        { code: 'BDAY20', discountType: 'PERCENT', discountValue: 20, customerId: customer1.id },
+      ],
+    });
+
+    this.logger.log('Demo data successfully seeded for Restaurant OS Kazakhstan (Phase 3 CRM & Loyalty)!');
   }
 }

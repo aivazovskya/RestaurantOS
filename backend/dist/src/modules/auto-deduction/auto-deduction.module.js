@@ -10,12 +10,20 @@ exports.AutoDeductionModule = void 0;
 const common_1 = require("@nestjs/common");
 const auto_deduction_service_1 = require("./auto-deduction.service");
 const stop_list_module_1 = require("../stop-list/stop-list.module");
+const customer_module_1 = require("../customer/customer.module");
+const loyalty_module_1 = require("../loyalty/loyalty.module");
+const coupon_module_1 = require("../coupon/coupon.module");
 let AutoDeductionModule = class AutoDeductionModule {
 };
 exports.AutoDeductionModule = AutoDeductionModule;
 exports.AutoDeductionModule = AutoDeductionModule = __decorate([
     (0, common_1.Module)({
-        imports: [stop_list_module_1.StopListModule],
+        imports: [
+            stop_list_module_1.StopListModule,
+            customer_module_1.CustomerModule,
+            loyalty_module_1.LoyaltyModule,
+            coupon_module_1.CouponModule,
+        ],
         providers: [auto_deduction_service_1.AutoDeductionService],
         exports: [auto_deduction_service_1.AutoDeductionService],
     })
