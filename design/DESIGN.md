@@ -1,39 +1,32 @@
-# Ui — Style Reference
-> clinical blueprint on frosted paper
+# Air — Style Reference
+> midnight sky through glass sculpture
 
-**Theme:** light
+**Theme:** dark
 
-shadcn/ui is a monochromatic design-system workshop: pure white canvas, soft warm-gray surfaces, and large-radius cards floating on hairline borders. The interface is almost entirely achromatic — black text, white surfaces, gray secondary tones — with a single destructive red reserved for error states and nothing else. Typography leans on Geist's geometric neutrality with tight letter-spacing on display sizes, creating a quiet, code-adjacent feel that reads as developer infrastructure rather than consumer product.
+Air uses a dark, atmospheric canvas with full-bleed cloud photography and sculptural glass-like 3D forms as its primary visual mode. The type system is the brand: a single sans-serif at moderate weights carries everything from nav to body, while compressed and cursive display cuts break in for emphasis.
 
 ## Tokens — Colors
 
 | Name | Value | Token | Role |
 |------|-------|-------|------|
-| Canvas | `#f5f5f5` | `--color-canvas` | Page background, muted surface fills, secondary buttons |
-| Paper | `#ffffff` | `--color-paper` | Card surfaces, popover backgrounds, primary button fills |
-| Surface Alt | `#fafafa` | `--color-surface-alt` | Sidebar background, subtle card variant, input resting state |
-| Ink | `#0a0a0a` | `--color-ink` | Primary text, headings, button labels, icon strokes |
-| Ink Soft | `#171717` | `--color-ink-soft` | Filled button backgrounds, secondary text on light surfaces |
-| Mid Gray | `#737373` | `--color-mid-gray` | Muted body text, placeholder text, helper labels, icon fills at rest |
-| Hairline | `#e5e5e5` | `--color-hairline` | Borders, input outlines, card edges, badge outlines |
-| Ember | `#e7000b` | `--color-ember` | Red decorative accent for icons, marks, and small graphic details. Use as a supporting accent, not as a status color |
+| Whiteout | `#ffffff` | `--color-whiteout` | Primary text on dark surfaces, nav button borders, hairline strokes |
+| Haze | `#121824` / `#f5f5f5` | `--color-haze` | Card surfaces, input fields, subtle button fills on dark backgrounds |
+| Ink | `#1b1b1b` | `--color-ink` | Body and heading text on light surfaces |
+| Black Void | `#090d14` / `#000000` | `--color-black-void` | Deepest contrast layer on dark canvas |
+| Twilight Blue | `#8ca0b8` / `#426188` | `--color-twilight-blue` | Subheading text on dark backgrounds |
+| Signal Blue | `#2b7fff` | `--color-signal-blue` | Blue text accent for links, tags, and emphasized short phrases |
 
 ## Tokens — Typography
 
-### Geist — All interface text — body at 14px/400, headings ranging 24–48px/600, buttons at 13–14px/500.
-- **Substitute:** Inter
-- **Weights:** 400, 500, 600
-- **Sizes:** 12, 13, 14, 16, 18, 24, 30, 36, 48
+### Control (Inter) — Primary interface typeface
+- **Weights:** 500 (body, nav, buttons, links) + 400 (long-form body)
+- **Sizes:** 13px, 16px, 20px, 32px, 56px
 
 ## Tokens — Spacing & Shapes
 
-**Base unit:** 4px
-**Density:** compact
-
 ### Border Radius
-- Cards: 24px
-- Buttons: 18px
-- Inputs: 18px
-- Badges: 18px
-- Small: 6px
-- Nested: 10px
+- Cards: 12px
+- Buttons: 8px
+- Inputs: 4px
+- Pills / Badges: 9999px
+- Images: 11px
