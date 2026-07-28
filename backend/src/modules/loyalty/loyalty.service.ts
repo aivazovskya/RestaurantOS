@@ -101,7 +101,8 @@ export class LoyaltyService {
   }
 
   /**
-   * Reverses earned points if a COMPLETED order is CANCELLED using atomic decrement.
+   * Reverses earned points if a COMPLETED order is CANCELLED.
+   * Handles partial reversals gracefully (clamps to 0 balance if customer already spent points).
    */
   async reverseEarnedPoints(customerId: string, orderId: string, orderNumber: string, txClient?: any) {
     const db = txClient || this.prisma;
@@ -116,26 +117,34 @@ export class LoyaltyService {
     if (!customer) return null;
 
     const pointsToDeduct = earnedTx.points;
+    const actualDeducted = Math.min(customer.loyaltyPoints, pointsToDeduct);
 
-    // Atomic decrement (ensuring non-negative result via transaction check if needed)
-    await db.customer.update({
-      where: { id: customerId },
-      data: { loyaltyPoints: { decrement: pointsToDeduct } },
-    });
+    if (actualDeducted > 0) {
+      await db.customer.update({
+        where: { id: customerId },
+        data: { loyaltyPoints: { decrement: actualDeducted } },
+      });
+    }
+
+    const isPartial = actualDeducted < pointsToDeduct;
+    const comment = isPartial
+      ? `Частичная отмена начисления по заказу ${orderNumber}: списано ${actualDeducted} из ${pointsToDeduct} Б (гость уже потратил часть баллов)`
+      : `Отмена начислений баллов по отмененному заказу ${orderNumber} (-${pointsToDeduct} Б)`;
 
     return await db.loyaltyTransaction.create({
       data: {
         customerId,
         type: 'MANUAL_ADJUSTMENT',
-        points: -pointsToDeduct,
+        points: -actualDeducted,
         orderId,
-        comment: `Отмена начислений баллов по отмененному заказу ${orderNumber}`,
+        comment,
       },
     });
   }
 
   /**
    * Manual points adjustment by manager/staff with required comment.
+   * Prevents negative balance when deducting points manually.
    */
   async adjustPointsManually(customerId: string, points: number, comment: string, txClient?: any) {
     if (!comment || comment.trim().length === 0) {
@@ -148,21 +157,36 @@ export class LoyaltyService {
       throw new NotFoundException(`Customer ${customerId} not found.`);
     }
 
-    await db.customer.update({
-      where: { id: customerId },
-      data: points > 0 ? { loyaltyPoints: { increment: points } } : { loyaltyPoints: { decrement: Math.abs(points) } },
-    });
+    let actualPointsChange = points;
+    let note = comment.trim();
+
+    if (points < 0) {
+      const pointsToDeduct = Math.abs(points);
+      actualPointsChange = -Math.min(customer.loyaltyPoints, pointsToDeduct);
+      if (Math.abs(actualPointsChange) < pointsToDeduct) {
+        note += ` (Частичное списание: списано ${actualPointsChange} из ${points} Б, баланс обнулен)`;
+      }
+    }
+
+    if (actualPointsChange !== 0) {
+      await db.customer.update({
+        where: { id: customerId },
+        data: actualPointsChange > 0
+          ? { loyaltyPoints: { increment: actualPointsChange } }
+          : { loyaltyPoints: { decrement: Math.abs(actualPointsChange) } },
+      });
+    }
 
     const tx = await db.loyaltyTransaction.create({
       data: {
         customerId,
         type: 'MANUAL_ADJUSTMENT',
-        points,
-        comment: `Ручная корректировка менеджера: ${comment}`,
+        points: actualPointsChange,
+        comment: `Ручная корректировка менеджера: ${note}`,
       },
     });
 
-    this.logger.log(`Manual points adjustment for ${customer.phone}: ${points > 0 ? '+' : ''}${points} points.`);
+    this.logger.log(`Manual points adjustment for ${customer.phone}: ${actualPointsChange > 0 ? '+' : ''}${actualPointsChange} points.`);
     return tx;
   }
 

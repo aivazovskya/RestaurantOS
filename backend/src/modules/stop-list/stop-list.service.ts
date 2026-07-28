@@ -3,6 +3,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RecipeResolverService } from '../../common/services/recipe-resolver.service';
 import { EventsGateway } from '../../common/gateways/events.gateway';
 
+/**
+ * StopListService
+ * Manages auto & manual stop-list state transitions for MenuItems.
+ * 
+ * ARCHITECTURE NOTE (Multi-branch menu scoping):
+ * Currently, MenuItem records are tied to organizationId, sharing a single global menu card across branches.
+ * In future multi-branch expansions with branch-specific menus or decoupled stock availability,
+ * schema will transition to BranchMenuItem (per-branch menu item availability mapping).
+ */
 @Injectable()
 export class StopListService {
   private readonly logger = new Logger(StopListService.name);

@@ -111,11 +111,16 @@ export class TableService {
   }
 
   /**
-   * Creates a table reservation (Phase 2 feature).
+   * Creates a table reservation with time overlap validation (90 minutes window).
    */
   async createReservation(dto: CreateReservationDto) {
     if (!dto.customerName || !dto.customerPhone || !dto.reservedFor) {
       throw new BadRequestException('Имя, телефон и дата/время бронирования обязательны!');
+    }
+
+    const targetTime = new Date(dto.reservedFor);
+    if (isNaN(targetTime.getTime())) {
+      throw new BadRequestException('Указана некорректная дата/время бронирования.');
     }
 
     let branchId = dto.branchId;
@@ -125,13 +130,47 @@ export class TableService {
       branchId = branch.id;
     }
 
+    // Check time overlap if a specific tableId is provided
+    if (dto.tableId) {
+      const table = await this.prisma.diningTable.findUnique({ where: { id: dto.tableId } });
+      if (!table) {
+        throw new NotFoundException(`Стол с ID ${dto.tableId} не найден.`);
+      }
+
+      // Slot duration window: ±90 minutes (1.5 hours)
+      const slotDurationMs = 90 * 60 * 1000;
+      const windowStart = new Date(targetTime.getTime() - slotDurationMs);
+      const windowEnd = new Date(targetTime.getTime() + slotDurationMs);
+
+      const existingOverlap = await this.prisma.tableReservation.findFirst({
+        where: {
+          tableId: dto.tableId,
+          status: 'CONFIRMED',
+          reservedFor: {
+            gte: windowStart,
+            lte: windowEnd,
+          },
+        },
+      });
+
+      if (existingOverlap) {
+        const existingTimeStr = new Date(existingOverlap.reservedFor).toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        throw new BadRequestException(
+          `Стол "${table.label}" уже забронирован на ${existingTimeStr} (гость: ${existingOverlap.customerName})! Выберите другое время или другой стол.`,
+        );
+      }
+    }
+
     const reservation = await this.prisma.tableReservation.create({
       data: {
         branchId,
         tableId: dto.tableId || null,
         customerName: dto.customerName.trim(),
         customerPhone: dto.customerPhone.trim(),
-        reservedFor: new Date(dto.reservedFor),
+        reservedFor: targetTime,
         partySize: dto.partySize || 2,
         notes: dto.notes || null,
         status: 'CONFIRMED',
