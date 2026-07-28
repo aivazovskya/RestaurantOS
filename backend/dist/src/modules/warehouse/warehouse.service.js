@@ -12,10 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WarehouseService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const stop_list_service_1 = require("../stop-list/stop-list.service");
 let WarehouseService = class WarehouseService {
     prisma;
-    constructor(prisma) {
+    stopListService;
+    constructor(prisma, stopListService) {
         this.prisma = prisma;
+        this.stopListService = stopListService;
     }
     async getIngredients() {
         return await this.prisma.ingredient.findMany({
@@ -46,6 +49,7 @@ let WarehouseService = class WarehouseService {
                     quantity: Number(data.initialStock) || 0,
                 },
             });
+            await this.stopListService.recalculateForIngredients([ingredient.id], warehouse.id);
         }
         return ingredient;
     }
@@ -82,6 +86,7 @@ let WarehouseService = class WarehouseService {
         if (!warehouse)
             throw new common_1.NotFoundException('Warehouse not found');
         const movementItems = [];
+        const updatedIngredientIds = [];
         for (const item of dto.items) {
             const ingredient = await this.prisma.ingredient.findUnique({ where: { id: item.ingredientId } });
             if (!ingredient)
@@ -122,6 +127,7 @@ let WarehouseService = class WarehouseService {
                 quantity: qty,
                 unitCost: cost,
             });
+            updatedIngredientIds.push(ingredient.id);
         }
         const movement = await this.prisma.stockMovement.create({
             data: {
@@ -135,6 +141,7 @@ let WarehouseService = class WarehouseService {
             },
             include: { items: { include: { ingredient: true } } },
         });
+        await this.stopListService.recalculateForIngredients(updatedIngredientIds, warehouse.id);
         return movement;
     }
     async addManualWriteOff(dto) {
@@ -144,6 +151,7 @@ let WarehouseService = class WarehouseService {
         if (!warehouse)
             throw new common_1.NotFoundException('Warehouse not found');
         const movementItems = [];
+        const updatedIngredientIds = [];
         for (const item of dto.items) {
             const ingredient = await this.prisma.ingredient.findUnique({ where: { id: item.ingredientId } });
             if (!ingredient)
@@ -168,8 +176,9 @@ let WarehouseService = class WarehouseService {
                 quantity: -qty,
                 unitCost: ingredient.costPerUnit,
             });
+            updatedIngredientIds.push(ingredient.id);
         }
-        return await this.prisma.stockMovement.create({
+        const movement = await this.prisma.stockMovement.create({
             data: {
                 warehouseId: warehouse.id,
                 type: 'MANUAL_WRITE_OFF',
@@ -178,6 +187,8 @@ let WarehouseService = class WarehouseService {
             },
             include: { items: { include: { ingredient: true } } },
         });
+        await this.stopListService.recalculateForIngredients(updatedIngredientIds, warehouse.id);
+        return movement;
     }
     async getMovements() {
         return await this.prisma.stockMovement.findMany({
@@ -201,6 +212,7 @@ let WarehouseService = class WarehouseService {
 exports.WarehouseService = WarehouseService;
 exports.WarehouseService = WarehouseService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        stop_list_service_1.StopListService])
 ], WarehouseService);
 //# sourceMappingURL=warehouse.service.js.map

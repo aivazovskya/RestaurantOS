@@ -13,12 +13,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AutoDeductionService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
-const unit_converter_1 = require("../../common/utils/unit-converter");
+const recipe_resolver_service_1 = require("../../common/services/recipe-resolver.service");
+const stop_list_service_1 = require("../stop-list/stop-list.service");
 let AutoDeductionService = AutoDeductionService_1 = class AutoDeductionService {
     prisma;
+    recipeResolver;
+    stopListService;
     logger = new common_1.Logger(AutoDeductionService_1.name);
-    constructor(prisma) {
+    constructor(prisma, recipeResolver, stopListService) {
         this.prisma = prisma;
+        this.recipeResolver = recipeResolver;
+        this.stopListService = stopListService;
     }
     async processReceipt(payload) {
         const existingMovement = await this.prisma.stockMovement.findFirst({
@@ -58,11 +63,26 @@ let AutoDeductionService = AutoDeductionService_1 = class AutoDeductionService {
                         },
                     },
                 });
-                if (!menuItem || !menuItem.recipeCard) {
+                if (!menuItem || !menuItem.recipeCard || !menuItem.recipeCard.items) {
                     this.logger.warn(`No recipe card found for POS Item ${posItem.posItemId} (${posItem.name})`);
                     continue;
                 }
-                await this.resolveRecipeDeductions(menuItem.recipeCard.items, posItem.quantity, deductionsMap);
+                const requirements = await this.recipeResolver.resolveIngredientRequirements(menuItem.recipeCard.items, posItem.quantity);
+                for (const req of requirements) {
+                    const existing = deductionsMap.get(req.ingredientId);
+                    if (existing) {
+                        existing.qty += req.requiredGrossAmount;
+                    }
+                    else {
+                        deductionsMap.set(req.ingredientId, {
+                            ingredientId: req.ingredientId,
+                            name: req.name,
+                            mainUnit: req.mainUnit,
+                            qty: req.requiredGrossAmount,
+                            unitCost: req.unitCost,
+                        });
+                    }
+                }
             }
         }
         if (deductionsMap.size === 0) {
@@ -138,6 +158,7 @@ let AutoDeductionService = AutoDeductionService_1 = class AutoDeductionService {
                 items: true,
             },
         });
+        await this.stopListService.recalculateForIngredients(Array.from(deductionsMap.keys()), warehouse.id);
         return {
             status: 'SUCCESS',
             receiptId: payload.receiptId,
@@ -149,46 +170,12 @@ let AutoDeductionService = AutoDeductionService_1 = class AutoDeductionService {
             incidents: incidentsList,
         };
     }
-    async resolveRecipeDeductions(recipeItems, soldQuantity, deductionsMap) {
-        for (const item of recipeItems) {
-            const ingredient = item.ingredient;
-            const grossInMainUnit = unit_converter_1.UnitConverter.convertToMainUnit(item.grossAmount, item.unit, ingredient.mainUnit);
-            const totalDeductionQty = grossInMainUnit * soldQuantity;
-            if (ingredient.isSemiFinished && ingredient.subRecipeId) {
-                const subRecipe = await this.prisma.recipeCard.findUnique({
-                    where: { id: ingredient.subRecipeId },
-                    include: {
-                        items: {
-                            include: { ingredient: true },
-                        },
-                    },
-                });
-                if (subRecipe && subRecipe.items) {
-                    const subYield = subRecipe.yieldAmount || 1.0;
-                    const subFactor = totalDeductionQty / subYield;
-                    await this.resolveRecipeDeductions(subRecipe.items, subFactor, deductionsMap);
-                    continue;
-                }
-            }
-            const existing = deductionsMap.get(ingredient.id);
-            if (existing) {
-                existing.qty += totalDeductionQty;
-            }
-            else {
-                deductionsMap.set(ingredient.id, {
-                    ingredientId: ingredient.id,
-                    name: ingredient.name,
-                    mainUnit: ingredient.mainUnit,
-                    qty: totalDeductionQty,
-                    unitCost: ingredient.costPerUnit,
-                });
-            }
-        }
-    }
 };
 exports.AutoDeductionService = AutoDeductionService;
 exports.AutoDeductionService = AutoDeductionService = AutoDeductionService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        recipe_resolver_service_1.RecipeResolverService,
+        stop_list_service_1.StopListService])
 ], AutoDeductionService);
 //# sourceMappingURL=auto-deduction.service.js.map

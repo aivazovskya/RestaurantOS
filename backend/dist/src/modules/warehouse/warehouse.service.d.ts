@@ -1,7 +1,9 @@
 import { PrismaService } from '../../prisma/prisma.service';
+import { StopListService } from '../stop-list/stop-list.service';
 export declare class WarehouseService {
     private readonly prisma;
-    constructor(prisma: PrismaService);
+    private readonly stopListService;
+    constructor(prisma: PrismaService, stopListService: StopListService);
     getIngredients(): Promise<{
         id: string;
         name: string;

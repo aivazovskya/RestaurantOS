@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { WarehouseService } from './warehouse.service';
 import { WarehouseController } from './warehouse.controller';
+import { StopListModule } from '../stop-list/stop-list.module';
 
 @Module({
+  imports: [StopListModule],
   controllers: [WarehouseController],
   providers: [WarehouseService],
   exports: [WarehouseService],

@@ -1,9 +1,13 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProcessPosReceiptDto } from './dto/process-receipt.dto';
+import { RecipeResolverService } from '../../common/services/recipe-resolver.service';
+import { StopListService } from '../stop-list/stop-list.service';
 export declare class AutoDeductionService {
     private readonly prisma;
+    private readonly recipeResolver;
+    private readonly stopListService;
     private readonly logger;
-    constructor(prisma: PrismaService);
+    constructor(prisma: PrismaService, recipeResolver: RecipeResolverService, stopListService: StopListService);
     processReceipt(payload: ProcessPosReceiptDto): Promise<{
         status: string;
         message: string;
@@ -47,5 +51,4 @@ export declare class AutoDeductionService {
         }[];
         message?: undefined;
     }>;
-    private resolveRecipeDeductions;
 }

@@ -6,6 +6,7 @@ import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { MenuModule } from './modules/menu/menu.module';
 import { AutoDeductionModule } from './modules/auto-deduction/auto-deduction.module';
 import { NexiumPosModule } from './modules/nexium-pos/nexium-pos.module';
+import { StopListModule } from './modules/stop-list/stop-list.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { NexiumPosModule } from './modules/nexium-pos/nexium-pos.module';
     MenuModule,
     AutoDeductionModule,
     NexiumPosModule,
+    StopListModule,
   ],
   providers: [SeedService],
 })

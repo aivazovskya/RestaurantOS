@@ -46,6 +46,9 @@ export declare class MenuService {
         sellingPrice: number;
         imageUrl: string | null;
         isAvailable: boolean;
+        stopListSource: string | null;
+        stopListReason: string | null;
+        stopListUpdatedAt: Date | null;
     }[]>;
     createMenuItem(data: any): Promise<{
         id: string;
@@ -58,6 +61,9 @@ export declare class MenuService {
         sellingPrice: number;
         imageUrl: string | null;
         isAvailable: boolean;
+        stopListSource: string | null;
+        stopListReason: string | null;
+        stopListUpdatedAt: Date | null;
     }>;
     saveRecipeCard(menuItemId: string, recipeItems: Array<{
         ingredientId: string;

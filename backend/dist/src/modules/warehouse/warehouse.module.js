@@ -10,11 +10,13 @@ exports.WarehouseModule = void 0;
 const common_1 = require("@nestjs/common");
 const warehouse_service_1 = require("./warehouse.service");
 const warehouse_controller_1 = require("./warehouse.controller");
+const stop_list_module_1 = require("../stop-list/stop-list.module");
 let WarehouseModule = class WarehouseModule {
 };
 exports.WarehouseModule = WarehouseModule;
 exports.WarehouseModule = WarehouseModule = __decorate([
     (0, common_1.Module)({
+        imports: [stop_list_module_1.StopListModule],
         controllers: [warehouse_controller_1.WarehouseController],
         providers: [warehouse_service_1.WarehouseService],
         exports: [warehouse_service_1.WarehouseService],

@@ -15,6 +15,7 @@ const warehouse_module_1 = require("./modules/warehouse/warehouse.module");
 const menu_module_1 = require("./modules/menu/menu.module");
 const auto_deduction_module_1 = require("./modules/auto-deduction/auto-deduction.module");
 const nexium_pos_module_1 = require("./modules/nexium-pos/nexium-pos.module");
+const stop_list_module_1 = require("./modules/stop-list/stop-list.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -27,6 +28,7 @@ exports.AppModule = AppModule = __decorate([
             menu_module_1.MenuModule,
             auto_deduction_module_1.AutoDeductionModule,
             nexium_pos_module_1.NexiumPosModule,
+            stop_list_module_1.StopListModule,
         ],
         providers: [seed_service_1.SeedService],
     })

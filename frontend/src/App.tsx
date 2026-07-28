@@ -53,7 +53,7 @@ export function App() {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="main-content">
         {isLoading ? (
-          <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ padding: '60px', textAlign: 'center', color: 'var(--color-twilight-blue)' }}>
             Загрузка данных Restaurant OS...
           </div>
         ) : (
@@ -65,7 +65,7 @@ export function App() {
               <WarehouseView balances={balances} onRefresh={loadAllData} />
             )}
             {activeTab === 'menu' && (
-              <MenuView menuItems={menuItems} />
+              <MenuView menuItems={menuItems} onRefresh={loadAllData} />
             )}
             {activeTab === 'movements' && (
               <MovementsView movements={movements} incidents={incidents} />

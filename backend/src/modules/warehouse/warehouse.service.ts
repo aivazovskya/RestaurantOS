@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { StopListService } from '../stop-list/stop-list.service';
 
 @Injectable()
 export class WarehouseService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly stopListService: StopListService,
+  ) {}
 
   async getIngredients() {
     return await this.prisma.ingredient.findMany({
@@ -37,6 +41,9 @@ export class WarehouseService {
           quantity: Number(data.initialStock) || 0,
         },
       });
+
+      // Recalculate stop-list
+      await this.stopListService.recalculateForIngredients([ingredient.id], warehouse.id);
     }
 
     return ingredient;
@@ -79,6 +86,7 @@ export class WarehouseService {
     if (!warehouse) throw new NotFoundException('Warehouse not found');
 
     const movementItems: Array<{ ingredientId: string; quantity: number; unitCost: number }> = [];
+    const updatedIngredientIds: string[] = [];
 
     for (const item of dto.items) {
       const ingredient = await this.prisma.ingredient.findUnique({ where: { id: item.ingredientId } });
@@ -87,7 +95,6 @@ export class WarehouseService {
       const qty = Number(item.quantity);
       const cost = Number(item.unitCost) || ingredient.costPerUnit;
 
-      // Update balance
       const balance = await this.prisma.stockBalance.findUnique({
         where: {
           warehouseId_ingredientId: {
@@ -112,7 +119,6 @@ export class WarehouseService {
         });
       }
 
-      // Update ingredient cost if provided
       if (cost > 0) {
         await this.prisma.ingredient.update({
           where: { id: ingredient.id },
@@ -125,6 +131,8 @@ export class WarehouseService {
         quantity: qty,
         unitCost: cost,
       });
+
+      updatedIngredientIds.push(ingredient.id);
     }
 
     const movement = await this.prisma.stockMovement.create({
@@ -140,6 +148,9 @@ export class WarehouseService {
       include: { items: { include: { ingredient: true } } },
     });
 
+    // Recalculate Stop-List for restocked ingredients (may restore AUTO stopped dishes)
+    await this.stopListService.recalculateForIngredients(updatedIngredientIds, warehouse.id);
+
     return movement;
   }
 
@@ -151,6 +162,7 @@ export class WarehouseService {
     if (!warehouse) throw new NotFoundException('Warehouse not found');
 
     const movementItems: Array<{ ingredientId: string; quantity: number; unitCost: number }> = [];
+    const updatedIngredientIds: string[] = [];
 
     for (const item of dto.items) {
       const ingredient = await this.prisma.ingredient.findUnique({ where: { id: item.ingredientId } });
@@ -179,9 +191,11 @@ export class WarehouseService {
         quantity: -qty,
         unitCost: ingredient.costPerUnit,
       });
+
+      updatedIngredientIds.push(ingredient.id);
     }
 
-    return await this.prisma.stockMovement.create({
+    const movement = await this.prisma.stockMovement.create({
       data: {
         warehouseId: warehouse.id,
         type: 'MANUAL_WRITE_OFF',
@@ -190,6 +204,11 @@ export class WarehouseService {
       },
       include: { items: { include: { ingredient: true } } },
     });
+
+    // Recalculate Stop-List for written-off ingredients (may trigger AUTO stop-list)
+    await this.stopListService.recalculateForIngredients(updatedIngredientIds, warehouse.id);
+
+    return movement;
   }
 
   async getMovements() {

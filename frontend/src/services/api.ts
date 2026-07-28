@@ -65,3 +65,31 @@ export async function simulateNexiumReceipt(receiptData: any) {
   });
   return await res.json();
 }
+
+/* Stop-List APIs */
+export async function fetchStopList() {
+  const res = await fetch(`${API_BASE}/menu/stop-list`);
+  return await res.json();
+}
+
+export async function fetchStopListHistory() {
+  const res = await fetch(`${API_BASE}/menu/stop-list/history`);
+  return await res.json();
+}
+
+export async function setManualStop(menuItemId: string, reason?: string) {
+  const res = await fetch(`${API_BASE}/menu/items/${menuItemId}/manual-stop`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  return await res.json();
+}
+
+export async function restoreManualStop(menuItemId: string) {
+  const res = await fetch(`${API_BASE}/menu/items/${menuItemId}/manual-restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return await res.json();
+}

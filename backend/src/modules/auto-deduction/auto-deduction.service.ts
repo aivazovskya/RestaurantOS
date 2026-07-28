@@ -1,13 +1,18 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { UnitConverter } from '../../common/utils/unit-converter';
 import { ProcessPosReceiptDto } from './dto/process-receipt.dto';
+import { RecipeResolverService } from '../../common/services/recipe-resolver.service';
+import { StopListService } from '../stop-list/stop-list.service';
 
 @Injectable()
 export class AutoDeductionService {
   private readonly logger = new Logger(AutoDeductionService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly recipeResolver: RecipeResolverService,
+    private readonly stopListService: StopListService,
+  ) {}
 
   async processReceipt(payload: ProcessPosReceiptDto) {
     // 1. Idempotency Check: check if movement for receiptId already processed
@@ -50,7 +55,7 @@ export class AutoDeductionService {
       shortage: number;
     }> = [];
 
-    // 3. Resolve all recipe items for sold menu items
+    // 3. Resolve all recipe items for sold menu items using RecipeResolverService
     if (payload.items && Array.isArray(payload.items)) {
       for (const posItem of payload.items) {
         const menuItem = await this.prisma.menuItem.findUnique({
@@ -68,16 +73,30 @@ export class AutoDeductionService {
           },
         });
 
-        if (!menuItem || !menuItem.recipeCard) {
+        if (!menuItem || !menuItem.recipeCard || !menuItem.recipeCard.items) {
           this.logger.warn(`No recipe card found for POS Item ${posItem.posItemId} (${posItem.name})`);
           continue;
         }
 
-        await this.resolveRecipeDeductions(
+        const requirements = await this.recipeResolver.resolveIngredientRequirements(
           menuItem.recipeCard.items,
           posItem.quantity,
-          deductionsMap,
         );
+
+        for (const req of requirements) {
+          const existing = deductionsMap.get(req.ingredientId);
+          if (existing) {
+            existing.qty += req.requiredGrossAmount;
+          } else {
+            deductionsMap.set(req.ingredientId, {
+              ingredientId: req.ingredientId,
+              name: req.name,
+              mainUnit: req.mainUnit,
+              qty: req.requiredGrossAmount,
+              unitCost: req.unitCost,
+            });
+          }
+        }
       }
     }
 
@@ -164,6 +183,12 @@ export class AutoDeductionService {
       },
     });
 
+    // 6. Recalculate Auto Stop-List for affected ingredients
+    await this.stopListService.recalculateForIngredients(
+      Array.from(deductionsMap.keys()),
+      warehouse.id,
+    );
+
     return {
       status: 'SUCCESS',
       receiptId: payload.receiptId,
@@ -174,53 +199,5 @@ export class AutoDeductionService {
       deductions: Array.from(deductionsMap.values()),
       incidents: incidentsList,
     };
-  }
-
-  private async resolveRecipeDeductions(
-    recipeItems: any[],
-    soldQuantity: number,
-    deductionsMap: Map<string, { ingredientId: string; name: string; mainUnit: string; qty: number; unitCost: number }>,
-  ) {
-    for (const item of recipeItems) {
-      const ingredient = item.ingredient;
-      const grossInMainUnit = UnitConverter.convertToMainUnit(
-        item.grossAmount,
-        item.unit,
-        ingredient.mainUnit,
-      );
-
-      const totalDeductionQty = grossInMainUnit * soldQuantity;
-
-      if (ingredient.isSemiFinished && ingredient.subRecipeId) {
-        const subRecipe = await this.prisma.recipeCard.findUnique({
-          where: { id: ingredient.subRecipeId },
-          include: {
-            items: {
-              include: { ingredient: true },
-            },
-          },
-        });
-
-        if (subRecipe && subRecipe.items) {
-          const subYield = subRecipe.yieldAmount || 1.0;
-          const subFactor = totalDeductionQty / subYield;
-          await this.resolveRecipeDeductions(subRecipe.items, subFactor, deductionsMap);
-          continue;
-        }
-      }
-
-      const existing = deductionsMap.get(ingredient.id);
-      if (existing) {
-        existing.qty += totalDeductionQty;
-      } else {
-        deductionsMap.set(ingredient.id, {
-          ingredientId: ingredient.id,
-          name: ingredient.name,
-          mainUnit: ingredient.mainUnit,
-          qty: totalDeductionQty,
-          unitCost: ingredient.costPerUnit,
-        });
-      }
-    }
   }
 }
