@@ -6,15 +6,9 @@ import {
   MessageSquare, 
   Search, 
   Plus, 
-  Clock, 
   ShoppingBag, 
-  Send, 
-  CheckCircle2, 
   X,
-  CreditCard,
-  History,
-  TrendingUp,
-  Percent
+  History
 } from 'lucide-react';
 import { 
   fetchCustomers, 
@@ -32,7 +26,6 @@ export const CRMView: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [coupons, setCoupons] = useState<any[]>([]);
   const [notificationLogs, setNotificationLogs] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Manual Adjust Modal state
   const [showAdjustModal, setShowAdjustModal] = useState(false);
@@ -49,7 +42,6 @@ export const CRMView: React.FC = () => {
 
   const loadData = async () => {
     try {
-      setIsLoading(true);
       const [custData, coupData, notifData] = await Promise.all([
         fetchCustomers(searchQuery).catch(() => []),
         fetchCoupons().catch(() => []),
@@ -60,8 +52,6 @@ export const CRMView: React.FC = () => {
       setNotificationLogs(notifData || []);
     } catch (e) {
       console.error('Error loading CRM data:', e);
-    } finally {
-      setIsLoading(false);
     }
   };
 

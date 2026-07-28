@@ -8,6 +8,7 @@ import { SimulatorView } from './components/SimulatorView';
 import { KDSView } from './components/KDSView';
 import { OrdersView } from './components/OrdersView';
 import { GuestMenuView } from './public/GuestMenuView';
+import { CRMView } from './components/CRMView';
 import { 
   fetchDashboardSummary, 
   fetchBalances, 
@@ -67,6 +68,9 @@ export function App() {
           <>
             {activeTab === 'dashboard' && (
               <DashboardView summaryData={summaryData} onNavigateTab={setActiveTab} />
+            )}
+            {activeTab === 'crm' && (
+              <CRMView />
             )}
             {activeTab === 'warehouse' && (
               <WarehouseView balances={balances} onRefresh={loadAllData} />

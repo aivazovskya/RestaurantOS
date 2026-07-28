@@ -101,6 +101,10 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
     }
   };
 
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedPoints, setAppliedPoints] = useState<number>(0);
+
   const handlePlaceOrder = async () => {
     if (Object.keys(cart).length === 0) return;
 
@@ -110,6 +114,9 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
     const payload = {
       qrSlug,
       type: 'DINE_IN_QR',
+      customerPhone: customerPhone || undefined,
+      couponCode: couponCode ? couponCode.trim() : undefined,
+      appliedPoints: appliedPoints > 0 ? appliedPoints : undefined,
       items: Object.entries(cart).map(([posItemId, c]) => ({
         posItemId,
         quantity: c.quantity,
@@ -120,6 +127,8 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
       const order = await createPublicOrder(payload);
       setOrderSuccess(order);
       setCart({});
+      setCouponCode('');
+      setAppliedPoints(0);
     } catch (err: any) {
       setErrorMessage(err.message || 'Ошибка оформления заказа');
     } finally {
@@ -283,15 +292,32 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
 
       {/* Floating Bottom Cart Bar */}
       {Object.keys(cart).length > 0 && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, maxWidth: '480px', margin: '0 auto', background: '#121824', borderTop: '1px solid var(--color-border)', padding: '16px', zIndex: 100 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-twilight-blue)' }}>Итого к оплате на месте:</span>
-            <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-emerald)' }}>{cartTotal.toLocaleString('ru-RU')} ₸</span>
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, maxWidth: '480px', margin: '0 auto', background: '#121824', borderTop: '1px solid var(--color-border)', padding: '14px 16px', zIndex: 100 }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+            <input
+              type="text"
+              placeholder="Ваш телефон (+7...)"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: '#090d14', color: '#fff', fontSize: '0.78rem' }}
+            />
+            <input
+              type="text"
+              placeholder="Промокод"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              style={{ width: '100px', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: '#090d14', color: '#fff', fontSize: '0.78rem', textTransform: 'uppercase' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-twilight-blue)' }}>Итого к оплате на месте:</span>
+            <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-emerald)' }}>{cartTotal.toLocaleString('ru-RU')} ₸</span>
           </div>
 
           <button
             className="btn btn-primary"
-            style={{ width: '100%', padding: '14px', fontSize: '0.95rem', justifyContent: 'center', background: 'var(--color-emerald)', borderColor: 'var(--color-emerald)' }}
+            style={{ width: '100%', padding: '12px', fontSize: '0.9rem', justifyContent: 'center', background: 'var(--color-emerald)', borderColor: 'var(--color-emerald)' }}
             disabled={isSubmittingOrder}
             onClick={handlePlaceOrder}
           >
