@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Truck, 
   MapPin, 
   UserCheck, 
   Plus, 
-  ShoppingBag, 
   RefreshCw 
 } from 'lucide-react';
 import { 
