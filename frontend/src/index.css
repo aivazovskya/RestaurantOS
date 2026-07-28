@@ -1,35 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* Import Google Fonts: Inter & JetBrains Mono */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;470;500;600;700&display=swap');
 
 :root {
-  /* Air Theme Tokens */
-  --color-whiteout: #ffffff;
-  --color-haze: #121824;
-  --color-haze-light: #f5f5f5;
-  --color-ink: #1b1b1b;
-  --color-black-void: #090d14;
-  --color-twilight-blue: #8ca0b8;
-  --color-signal-blue: #2b7fff;
-  --color-ember: #e7000b;
+  /* Colors */
+  --color-cream-paper: #fafaf8;
+  --color-card-white: #ffffff;
+  --color-pebble-gray: #f0f0ef;
+  --color-linen-border: #e4e5e1;
+  --color-ash: #d9d9d9;
+  --color-ink: #141415;
+  --color-graphite: #2e2e2c;
+  --color-carbon: #454542;
+  --color-slate: #6e6f6c;
+  --color-stone: #8c8c89;
+  --color-fog: #b7b7b4;
+  --color-signal-orange: #f35b22;
+  --color-ember: #ff5e24;
+  --color-apricot: #f77c55;
+  --color-burnt-orange: #be400f;
+  --color-persimmon: #d14200;
+  --color-peach-blush: #ffcab5;
+  --color-teal-token: #88d2c3;
+  --color-sky-token: #8bc5f3;
+  --color-orchid-token: #c678dd;
+  --color-forest: #165424;
+  --color-success-green: #62b06d;
   --color-emerald: #10b981;
-  --color-amber: #f59e0b;
+  --color-coral-alert: #f67976;
+  --color-rose-blush: #f9aea9;
 
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  /* Legacy mapped aliases for theme consistency */
+  --color-dark-canvas: #fafaf8;
+  --color-haze-card: #ffffff;
+  --color-twilight-blue: #6e6f6c;
+  --color-border: #e4e5e1;
+  --color-whiteout: #141415;
 
   /* Typography */
-  --font-control: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
+  --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-code: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Border Radii per Air spec */
+  /* Border Radius */
   --radius-cards: 12px;
-  --radius-buttons: 8px;
+  --radius-buttons: 4px;
+  --radius-badges: 4px;
   --radius-inputs: 4px;
-  --radius-pills: 9999px;
-  --radius-images: 11px;
 
-  /* Layout */
-  --page-max-width: 1150px;
-  --card-padding: 20px;
+  /* Shadows */
+  --shadow-subtle: rgba(24, 25, 22, 0.06) 0px 1px 2px 0px;
+  --shadow-card: rgba(24, 25, 22, 0.04) 0px 2px 4px 0px;
 }
 
 * {
@@ -39,297 +58,229 @@
 }
 
 body {
-  background-color: var(--color-black-void);
-  color: var(--color-whiteout);
-  font-family: var(--font-control);
-  min-height: 100vh;
+  background-color: var(--color-cream-paper);
+  color: var(--color-ink);
+  font-family: var(--font-inter);
+  font-size: 14px;
   line-height: 1.5;
-  font-size: 16px;
   -webkit-font-smoothing: antialiased;
-  background-image: 
-    radial-gradient(at 15% 15%, rgba(43, 127, 255, 0.05) 0px, transparent 40%),
-    radial-gradient(at 85% 85%, rgba(66, 97, 136, 0.08) 0px, transparent 40%);
-  background-attachment: fixed;
 }
 
-button, input, select, textarea {
-  font-family: inherit;
-}
-
-/* App Container Layout */
+/* App Layout */
 .app-layout {
   display: flex;
   min-height: 100vh;
+  background-color: var(--color-cream-paper);
 }
 
 .sidebar {
-  width: 250px;
-  background: rgba(10, 14, 22, 0.95);
-  backdrop-filter: blur(12px);
-  border-right: 1px solid var(--color-border);
+  width: 260px;
+  background-color: var(--color-pebble-gray);
+  border-right: 1px solid var(--color-linen-border);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
-  position: fixed;
-  height: 100vh;
-  top: 0;
-  left: 0;
-  z-index: 100;
+  flex-shrink: 0;
 }
 
-.brand-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 8px 20px 8px;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 20px;
-}
-
-.brand-icon {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, var(--color-signal-blue), var(--color-twilight-blue));
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-
-.brand-title {
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-  color: var(--color-whiteout);
-}
-
-.brand-tag {
-  font-size: 0.68rem;
-  background: rgba(43, 127, 255, 0.15);
-  color: var(--color-signal-blue);
-  padding: 2px 6px;
-  border-radius: var(--radius-pills);
-  font-weight: 500;
-  margin-top: 2px;
-  display: inline-block;
-}
-
-.nav-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: var(--radius-buttons);
-  color: var(--color-twilight-blue);
-  font-weight: 500;
-  font-size: 0.9rem;
-  background: transparent;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: left;
-  width: 100%;
-}
-
-.nav-item:hover {
-  color: var(--color-whiteout);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.nav-item.active {
-  color: var(--color-whiteout);
-  background: var(--color-haze);
-  border-color: var(--color-border);
-}
-
-.sidebar-footer {
-  padding-top: 16px;
-  border-top: 1px solid var(--color-border);
-  font-size: 0.75rem;
-  color: var(--color-twilight-blue);
-}
-
-/* Main Content Area */
 .main-content {
-  margin-left: 250px;
   flex: 1;
-  padding: 36px 40px;
-  max-width: var(--page-max-width);
+  padding: 32px 40px;
+  max-width: 1300px;
+  overflow-y: auto;
 }
 
+/* Typography Components */
 .page-header {
+  margin-bottom: 28px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 28px;
+  align-items: flex-end;
 }
 
 .page-title {
-  font-size: 1.85rem;
-  font-weight: 600;
-  letter-spacing: -0.5px;
-  color: var(--color-whiteout);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-ink);
+  line-height: 1.2;
 }
 
 .page-subtitle {
   font-size: 0.9rem;
-  color: var(--color-twilight-blue);
-  margin-top: 2px;
+  color: var(--color-slate);
+  margin-top: 4px;
 }
 
-/* Air Haze Cards — 12px radius, no shadow */
+/* Card Component */
 .card {
-  background: var(--color-haze);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-card-white);
+  border: 1px solid var(--color-linen-border);
   border-radius: var(--radius-cards);
-  padding: var(--card-padding);
-  transition: border-color 0.15s ease;
+  padding: 24px;
+  box-shadow: var(--shadow-subtle);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: #d1d2cc;
+  box-shadow: var(--shadow-card);
 }
 
-/* Metrics Grid */
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.metric-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.metric-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 2px;
-}
-
-.metric-icon.emerald { background: rgba(16, 185, 129, 0.15); color: var(--color-emerald); }
-.metric-icon.cyan { background: rgba(43, 127, 255, 0.15); color: var(--color-signal-blue); }
-.metric-icon.amber { background: rgba(245, 158, 11, 0.15); color: var(--color-amber); }
-.metric-icon.rose { background: rgba(231, 0, 11, 0.15); color: var(--color-ember); }
-
-.metric-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--color-twilight-blue);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.metric-value {
-  font-size: 1.8rem;
-  font-weight: 600;
-  letter-spacing: -0.5px;
-  color: var(--color-whiteout);
-}
-
-/* Buttons — 8px radius per Air spec */
+/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
   border-radius: var(--radius-buttons);
-  font-weight: 500;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
   transition: all 0.15s ease;
-  height: 38px;
+  font-family: var(--font-inter);
 }
 
 .btn-primary {
-  background: var(--color-whiteout);
-  color: var(--color-ink);
-  border: 1px solid var(--color-whiteout);
+  background-color: var(--color-signal-orange);
+  color: #ffffff;
+  border-color: var(--color-signal-orange);
 }
 
 .btn-primary:hover {
-  background: #eaeaea;
+  background-color: var(--color-ember);
+  border-color: var(--color-ember);
 }
 
 .btn-secondary {
-  background: transparent;
-  color: var(--color-whiteout);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-card-white);
+  color: var(--color-ink);
+  border-color: var(--color-linen-border);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.25);
+  background-color: var(--color-pebble-gray);
+  border-color: var(--color-ash);
 }
 
 .btn-danger {
-  background: var(--color-ember);
-  color: var(--color-whiteout);
+  background-color: #e7000b;
+  color: #ffffff;
+  border-color: #e7000b;
 }
 
-/* Tables */
-.table-container {
-  overflow-x: auto;
+.btn-danger:hover {
+  background-color: #c9000a;
 }
 
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-badges);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: var(--font-code);
+}
+
+.badge-success {
+  background-color: rgba(98, 176, 109, 0.15);
+  color: var(--color-forest);
+  border: 1px solid rgba(98, 176, 109, 0.3);
+}
+
+.badge-danger {
+  background-color: rgba(246, 121, 118, 0.15);
+  color: #be400f;
+  border: 1px solid rgba(246, 121, 118, 0.3);
+}
+
+.badge-warning {
+  background-color: rgba(243, 91, 34, 0.15);
+  color: var(--color-burnt-orange);
+  border: 1px solid rgba(243, 91, 34, 0.3);
+}
+
+.badge-info {
+  background-color: rgba(139, 197, 243, 0.18);
+  color: #1e56a0;
+  border: 1px solid rgba(139, 197, 243, 0.4);
+}
+
+.badge-secondary {
+  background-color: var(--color-pebble-gray);
+  color: var(--color-slate);
+  border: 1px solid var(--color-linen-border);
+}
+
+/* Form Controls */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-graphite);
+  margin-bottom: 6px;
+}
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: var(--color-card-white);
+  border: 1px solid var(--color-linen-border);
+  border-radius: var(--radius-inputs);
+  color: var(--color-ink);
+  font-size: 0.9rem;
+  font-family: var(--font-inter);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: var(--color-signal-orange);
+  box-shadow: 0 0 0 2px rgba(243, 91, 34, 0.15);
+}
+
+/* Custom Table */
 .custom-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.875rem;
 }
 
 .custom-table th {
-  background: rgba(255, 255, 255, 0.03);
   padding: 12px 16px;
-  font-weight: 500;
-  color: var(--color-twilight-blue);
-  border-bottom: 1px solid var(--color-border);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
+  color: var(--color-slate);
+  border-bottom: 1px solid var(--color-linen-border);
+  background-color: var(--color-pebble-gray);
 }
 
 .custom-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--color-linen-border);
+  color: var(--color-ink);
 }
 
-.custom-table tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+.custom-table tr:last-child td {
+  border-bottom: none;
 }
 
-/* Badges / Pills — 9999px radius per Air spec */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: var(--radius-pills);
-  font-size: 0.75rem;
-  font-weight: 500;
+.custom-table tr:hover td {
+  background-color: rgba(240, 240, 239, 0.5);
 }
-
-.badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-.badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-.badge-danger { background: rgba(231, 0, 11, 0.15); color: #f87171; }
-.badge-info { background: rgba(43, 127, 255, 0.15); color: #60a5fa; }
 
 /* Modal Overlay */
 .modal-overlay {
@@ -338,64 +289,62 @@ button, input, select, textarea {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  background-color: rgba(20, 20, 21, 0.5);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
 }
 
 .modal-content {
-  background: #0f1520;
-  border: 1px solid var(--color-border);
+  background-color: var(--color-card-white);
+  border: 1px solid var(--color-linen-border);
   border-radius: var(--radius-cards);
   width: 100%;
-  max-width: 520px;
-  padding: 28px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  max-width: 500px;
+  padding: 24px;
+  box-shadow: var(--shadow-subtle-5);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .modal-title {
   font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--color-whiteout);
+  font-weight: 700;
+  color: var(--color-ink);
 }
 
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-label {
-  display: block;
-  font-size: 0.8rem;
+/* Nav Item Styling */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-buttons);
+  font-size: 0.88rem;
   font-weight: 500;
-  color: var(--color-twilight-blue);
-  margin-bottom: 6px;
+  color: var(--color-slate);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
 }
 
-/* Inputs — 4px radius per Air spec */
-.form-input, .form-select {
-  width: 100%;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-inputs);
-  color: var(--color-whiteout);
-  font-size: 0.875rem;
-  outline: none;
-  transition: border-color 0.15s;
+.nav-item:hover {
+  background-color: var(--color-cream-paper);
+  color: var(--color-ink);
 }
 
-.form-input:focus, .form-select:focus {
-  border-color: var(--color-signal-blue);
-  box-shadow: 0 0 0 1px var(--color-signal-blue);
+.nav-item.active {
+  background-color: var(--color-card-white);
+  color: var(--color-signal-orange);
+  font-weight: 600;
+  box-shadow: var(--shadow-subtle);
 }
