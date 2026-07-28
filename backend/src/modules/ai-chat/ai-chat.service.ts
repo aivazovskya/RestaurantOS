@@ -9,6 +9,11 @@ export interface ChatResponseDto {
   toolsCalled: string[];
 }
 
+/**
+ * AiChatService
+ * Deterministic intent-routed analytics AI Assistant for restaurant owners.
+ * Guarantees ZERO hallucinations by querying ground-truth SQL metrics directly from AnalyticsService.
+ */
 @Injectable()
 export class AiChatService {
   private readonly logger = new Logger(AiChatService.name);
@@ -16,16 +21,18 @@ export class AiChatService {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   /**
-   * Processes user message via function calling / tool dispatching logic.
-   * Guarantees 0 hallucinations by relying 100% on AnalyticsService SQL metrics.
+   * Processes user message via robust natural language intent matching and tool dispatching.
    */
   async processChatMessage(message: string, sessionId?: string): Promise<ChatResponseDto> {
     const cleanSessionId = sessionId || `session-${Date.now()}`;
     const queryLower = message.toLowerCase().trim();
     const toolsCalled: string[] = [];
 
-    // Intent 1: Revenue / Income / Sales
-    if (queryLower.includes('выручк') || queryLower.includes('заработ') || queryLower.includes('доход') || queryLower.includes('продаж')) {
+    // Helper regex array check
+    const matchesAny = (keywords: string[]) => keywords.some((kw) => queryLower.includes(kw));
+
+    // Intent 1: Revenue / Income / Sales / Money / Cashier
+    if (matchesAny(['выручк', 'заработ', 'доход', 'продаж', 'деньг', 'прибыль', 'касс', 'получили', 'финанс', 'оборот', 'сколько'])) {
       toolsCalled.push('getRevenue');
       const revData = await this.analyticsService.getRevenue(undefined, undefined, 'day');
 
@@ -36,7 +43,7 @@ export class AiChatService {
         `**Разбивка по каналам продаж**:\n` +
         `- Касса Nexium (POS): **${revData.byType.POS_CASHIER?.amount.toLocaleString('ru-RU') || 0} ₸** (${revData.byType.POS_CASHIER?.count || 0} чеков)\n` +
         `- QR-заказы в зале: **${revData.byType.DINE_IN_QR?.amount.toLocaleString('ru-RU') || 0} ₸** (${revData.byType.DINE_IN_QR?.count || 0} заказов)\n` +
-        `- Самзабор (Pickup): **${revData.byType.PICKUP?.amount.toLocaleString('ru-RU') || 0} ₸** (${revData.byType.PICKUP?.count || 0} заказов)\n` +
+        `- Самовывоз (Pickup): **${revData.byType.PICKUP?.amount.toLocaleString('ru-RU') || 0} ₸** (${revData.byType.PICKUP?.count || 0} заказов)\n` +
         `- Курьерская доставка: **${revData.byType.DELIVERY?.amount.toLocaleString('ru-RU') || 0} ₸** (${revData.byType.DELIVERY?.count || 0} доставок)`;
 
       return {
@@ -48,8 +55,8 @@ export class AiChatService {
       };
     }
 
-    // Intent 2: Top / Bottom sold items
-    if (queryLower.includes('топ') || queryLower.includes('бюдо') || queryLower.includes('блюд') || queryLower.includes('худш') || queryLower.includes('лучш') || queryLower.includes('популяр')) {
+    // Intent 2: Top / Bottom sold items / Popularity
+    if (matchesAny(['топ', 'бюдо', 'блюд', 'худш', 'лучш', 'популяр', 'продали', 'ходов', 'лидер', 'хит', 'меню', 'аутсайдер'])) {
       toolsCalled.push('getTopItems');
       const topData = await this.analyticsService.getTopItems();
 
@@ -69,8 +76,8 @@ export class AiChatService {
       };
     }
 
-    // Intent 3: Purchase Forecast & Stock depletion
-    if (queryLower.includes('законч') || queryLower.includes('фарш') || queryLower.includes('прогноз') || queryLower.includes('закуп') || queryLower.includes('остат')) {
+    // Intent 3: Purchase Forecast & Stock depletion / Inventory
+    if (matchesAny(['законч', 'фарш', 'прогноз', 'закуп', 'остат', 'склад', 'хватит', 'дефицит', 'сырь', 'продук'])) {
       toolsCalled.push('getPurchaseForecast');
       const forecastData = await this.analyticsService.getPurchaseForecast();
 
@@ -95,8 +102,8 @@ export class AiChatService {
       };
     }
 
-    // Intent 4: Anomaly Detection / Flagged operations
-    if (queryLower.includes('подозрительн') || queryLower.includes('аномали') || queryLower.includes('списан') || queryLower.includes('нарушен') || queryLower.includes('безопасн')) {
+    // Intent 4: Anomaly Detection / Security / Fraud / Write-offs
+    if (matchesAny(['подозрительн', 'аномали', 'списан', 'нарушен', 'безопасн', 'воровст', 'краж', 'махинац', 'афер'])) {
       toolsCalled.push('getFlaggedOperations');
       const flagData = await this.analyticsService.getFlaggedOperations();
 
@@ -106,7 +113,7 @@ export class AiChatService {
 
       const text = `🛡️ **Анализ безопасности и аномальных операций**:\n` +
         `• Всего выявлено зафиксированных событий: **${flagData.totalFlaggedCount}**\n` +
-        `• Из них со высокой степенью рисков: **${flagData.highSeverityCount}**\n\n` +
+        `• Из них с высокой степенью рисков: **${flagData.highSeverityCount}**\n\n` +
         `**Зафиксированные аномалии**:\n` +
         (flagList || 'Подозрительных операций и аномалий за период не обнаружено.');
 
@@ -118,8 +125,8 @@ export class AiChatService {
       };
     }
 
-    // Intent 5: Stock shortage incidents & Stop-list
-    if (queryLower.includes('инцидент') || queryLower.includes('нехватк') || queryLower.includes('стоп')) {
+    // Intent 5: Stock shortage incidents & Stop-list frequency
+    if (matchesAny(['инцидент', 'нехватк', 'стоп', 'сбой', 'задерж', 'проблем'])) {
       toolsCalled.push('getStockIncidents');
       toolsCalled.push('getStopListFrequency');
       const [incData, stopData] = await Promise.all([

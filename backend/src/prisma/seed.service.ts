@@ -1,11 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 
 @Injectable()
-export class SeedService {
+export class SeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SeedService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async onApplicationBootstrap() {
+    await this.seedDemoData();
+  }
 
   async seedDemoData() {
     // Check if organization already exists

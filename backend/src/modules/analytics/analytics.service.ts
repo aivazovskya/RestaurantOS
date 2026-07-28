@@ -197,7 +197,8 @@ export class AnalyticsService {
         };
       }
 
-      if (ev.triggeredBy === 'AUTO_STOPLIST_ENGINE') {
+      const isAuto = ev.action && ev.action.startsWith('AUTO');
+      if (isAuto) {
         itemEventMap[ev.menuItemName].autoCount += 1;
       } else {
         itemEventMap[ev.menuItemName].manualCount += 1;
@@ -351,7 +352,8 @@ export class AnalyticsService {
 
     const stopListCounts: { [dish: string]: number } = {};
     for (const ev of stopListEvents) {
-      if (ev.triggeredBy !== 'AUTO_STOPLIST_ENGINE') {
+      const isAuto = ev.action && ev.action.startsWith('AUTO');
+      if (!isAuto) {
         stopListCounts[ev.menuItemName] = (stopListCounts[ev.menuItemName] || 0) + 1;
       }
     }

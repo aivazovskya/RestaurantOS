@@ -9,7 +9,13 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { PrismaService } from '../../prisma/prisma.service';
 
+/**
+ * EventsGateway
+ * Manages real-time WebSocket communication across staff clients (KDS, POS, Dispatcher, CRM).
+ * Note: WsAuthGuard / JWT handshake middleware attaches here for system-wide Auth/RBAC.
+ */
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -22,8 +28,24 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly logger = new Logger(EventsGateway.name);
 
-  handleConnection(client: Socket) {
-    const branchId = (client.handshake.query.branchId as string) || 'default-branch';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async handleConnection(client: Socket) {
+    const rawBranchId = (client.handshake.query.branchId as string) || '';
+    let branchId = rawBranchId;
+
+    if (rawBranchId) {
+      // Validate branch existence in database
+      const branchExists = await this.prisma.branch.findUnique({ where: { id: rawBranchId } });
+      if (!branchExists) {
+        this.logger.warn(`Client ${client.id} provided invalid branchId "${rawBranchId}". Falling back to default.`);
+        branchId = 'default-branch';
+      }
+    } else {
+      const defaultBranch = await this.prisma.branch.findFirst();
+      branchId = defaultBranch ? defaultBranch.id : 'default-branch';
+    }
+
     const roomName = `branch_${branchId}`;
     client.join(roomName);
     this.logger.log(`Client ${client.id} connected to WebSocket room "${roomName}"`);
@@ -34,11 +56,16 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('joinBranch')
-  handleJoinBranch(
+  async handleJoinBranch(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { branchId: string },
   ) {
     if (data && data.branchId) {
+      const branchExists = await this.prisma.branch.findUnique({ where: { id: data.branchId } });
+      if (!branchExists) {
+        return { status: 'ERROR', message: `Branch "${data.branchId}" not found` };
+      }
+
       const roomName = `branch_${data.branchId}`;
       client.join(roomName);
       this.logger.log(`Client ${client.id} joined room ${roomName}`);
