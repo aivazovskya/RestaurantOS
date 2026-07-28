@@ -101,6 +101,8 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
     }
   };
 
+  const [orderType, setOrderType] = useState<'DINE_IN_QR' | 'DELIVERY'>('DINE_IN_QR');
+  const [deliveryAddress, setDeliveryAddress] = useState('г. Алматы, пр. Достык 120, кв. 45');
   const [customerPhone, setCustomerPhone] = useState('');
   const [couponCode, setCouponCode] = useState('');
   const [appliedPoints, setAppliedPoints] = useState<number>(0);
@@ -113,7 +115,8 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
 
     const payload = {
       qrSlug,
-      type: 'DINE_IN_QR',
+      type: orderType,
+      deliveryAddress: orderType === 'DELIVERY' ? deliveryAddress : undefined,
       customerPhone: customerPhone || undefined,
       couponCode: couponCode ? couponCode.trim() : undefined,
       appliedPoints: appliedPoints > 0 ? appliedPoints : undefined,
@@ -293,6 +296,56 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
       {/* Floating Bottom Cart Bar */}
       {Object.keys(cart).length > 0 && (
         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, maxWidth: '480px', margin: '0 auto', background: '#121824', borderTop: '1px solid var(--color-border)', padding: '14px 16px', zIndex: 100 }}>
+          {/* Order Type Switcher */}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setOrderType('DINE_IN_QR')}
+              style={{
+                flex: 1,
+                padding: '6px',
+                borderRadius: '6px',
+                border: '1px solid var(--color-border)',
+                background: orderType === 'DINE_IN_QR' ? 'var(--color-signal-blue)' : '#090d14',
+                color: '#fff',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              🍽️ Заказать в зале (Стол 7)
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderType('DELIVERY')}
+              style={{
+                flex: 1,
+                padding: '6px',
+                borderRadius: '6px',
+                border: '1px solid var(--color-border)',
+                background: orderType === 'DELIVERY' ? 'var(--color-signal-blue)' : '#090d14',
+                color: '#fff',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              🚴 Курьерская доставка
+            </button>
+          </div>
+
+          {orderType === 'DELIVERY' && (
+            <div style={{ marginBottom: '10px' }}>
+              <input
+                type="text"
+                placeholder="Адрес доставки (Улица, дом, квартира)..."
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: '#090d14', color: '#38bdf8', fontSize: '0.78rem', fontWeight: 600 }}
+              />
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
             <input
               type="text"
@@ -311,7 +364,7 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--color-twilight-blue)' }}>Итого к оплате на месте:</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-twilight-blue)' }}>Итого к оплате:</span>
             <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-emerald)' }}>{cartTotal.toLocaleString('ru-RU')} ₸</span>
           </div>
 
@@ -322,7 +375,7 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
             onClick={handlePlaceOrder}
           >
             <ShoppingBag size={18} />
-            {isSubmittingOrder ? 'Отправка заказа...' : 'Оформить заказ на Стол 7'}
+            {isSubmittingOrder ? 'Отправка заказа...' : orderType === 'DELIVERY' ? 'Оформить курьерскую доставку' : 'Оформить заказ на Стол 7'}
             <ArrowRight size={18} />
           </button>
         </div>

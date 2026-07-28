@@ -13,6 +13,7 @@ import { CustomerModule } from './modules/customer/customer.module';
 import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { CouponModule } from './modules/coupon/coupon.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { CourierModule } from './modules/courier/courier.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     LoyaltyModule,
     CouponModule,
     NotificationModule,
+    CourierModule,
   ],
   providers: [SeedService],
 })

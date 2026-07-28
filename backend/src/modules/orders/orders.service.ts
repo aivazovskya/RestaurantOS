@@ -13,6 +13,7 @@ export class CreateOrderDto {
   type?: 'DINE_IN_QR' | 'PICKUP' | 'DELIVERY';
   customerPhone?: string;
   customerName?: string;
+  deliveryAddress?: string;
   appliedPoints?: number;
   couponCode?: string;
   comment?: string;
@@ -43,7 +44,7 @@ export class OrdersService {
    */
   async createPublicOrder(dto: CreateOrderDto) {
     if (!dto.items || dto.items.length === 0) {
-      throw new BadRequestException('Order must contain at least 1 item.');
+      throw new BadRequestException('Заказ должен содержать хотя бы одну позицию.');
     }
 
     // Resolve branch and table if QR slug is provided
@@ -62,6 +63,14 @@ export class OrdersService {
 
     if (!branch) {
       throw new NotFoundException('Active branch not found for order creation.');
+    }
+
+    const orderType = dto.type || (table ? 'DINE_IN_QR' : 'PICKUP');
+
+    if (orderType === 'DELIVERY') {
+      if (!dto.deliveryAddress || !dto.deliveryAddress.trim()) {
+        throw new BadRequestException('Укажите адрес доставки!');
+      }
     }
 
     // Resolve or create Customer if phone provided
@@ -126,11 +135,13 @@ export class OrdersService {
       data: {
         branchId: branch.id,
         orderNumber,
-        type: dto.type || (table ? 'DINE_IN_QR' : 'PICKUP'),
+        type: orderType,
         status: 'NEW',
         tableId: table ? table.id : null,
         customerId: customer?.id || null,
         customerPhone: customer?.phone || dto.customerPhone || null,
+        deliveryAddress: orderType === 'DELIVERY' ? dto.deliveryAddress?.trim() : null,
+        deliveryStatus: orderType === 'DELIVERY' ? 'PENDING_ASSIGNMENT' : null,
         totalAmount: finalTotal,
         discountAmount,
         appliedPoints,
@@ -144,6 +155,7 @@ export class OrdersService {
         items: true,
         table: true,
         customer: true,
+        courier: true,
       },
     });
 
@@ -175,6 +187,7 @@ export class OrdersService {
         items: true,
         table: true,
         customer: true,
+        courier: true,
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
@@ -314,11 +327,145 @@ export class OrdersService {
     const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: { status, customerId: order.customerId },
-      include: { items: true, table: true, customer: true },
+      include: { items: true, table: true, customer: true, courier: true },
     });
 
     // Broadcast WS event
     this.eventsGateway.emitOrderStatusChanged(order.branchId, order.id, status, updatedOrder);
+
+    return updatedOrder;
+  }
+
+  /**
+   * Assigns an available courier to a delivery order (Dispatcher action).
+   */
+  async assignCourier(orderId: string, courierId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { courier: true, items: true, table: true, customer: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Заказ ${orderId} не найден.`);
+    }
+
+    if (order.type !== 'DELIVERY') {
+      throw new BadRequestException('Назначить курьера можно только для заказов типа DELIVERY.');
+    }
+
+    const courier = await this.prisma.courier.findUnique({
+      where: { id: courierId },
+    });
+
+    if (!courier) {
+      throw new NotFoundException(`Курьер ${courierId} не найден.`);
+    }
+
+    if (courier.status !== 'AVAILABLE') {
+      throw new BadRequestException(`Нельзя назначить курьера ${courier.name}. Он должен быть в статусе AVAILABLE (текущий: ${courier.status}).`);
+    }
+
+    // Update order with courier and set deliveryStatus to ASSIGNED
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        courierId,
+        deliveryStatus: 'ASSIGNED',
+        assignedAt: new Date(),
+      },
+      include: {
+        courier: true,
+        items: true,
+        customer: true,
+      },
+    });
+
+    // Update courier status to ON_DELIVERY
+    await this.prisma.courier.update({
+      where: { id: courierId },
+      data: { status: 'ON_DELIVERY' },
+    });
+
+    this.logger.log(`Order ${order.orderNumber} assigned to Courier ${courier.name} (${courier.phone}).`);
+
+    // Broadcast WS event
+    this.eventsGateway.emitDeliveryAssigned(updatedOrder.branchId, updatedOrder);
+
+    return updatedOrder;
+  }
+
+  /**
+   * Updates delivery status of an assigned order (Courier action).
+   * Status progression: ASSIGNED -> PICKED_UP -> EN_ROUTE -> DELIVERED / FAILED.
+   */
+  async updateDeliveryStatus(orderId: string, deliveryStatus: string, failureReason?: string) {
+    const validStatuses = ['ASSIGNED', 'PICKED_UP', 'EN_ROUTE', 'DELIVERED', 'FAILED'];
+    if (!validStatuses.includes(deliveryStatus)) {
+      throw new BadRequestException(`Недопустимый статус доставки: ${deliveryStatus}`);
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { courier: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Заказ ${orderId} не найден.`);
+    }
+
+    if (deliveryStatus === 'FAILED' && (!failureReason || !failureReason.trim())) {
+      throw new BadRequestException('Для статуса FAILED обязательна причина неуспешной доставки (failureReason).');
+    }
+
+    const updateData: any = {
+      deliveryStatus,
+    };
+
+    if (deliveryStatus === 'PICKED_UP') {
+      updateData.pickedUpAt = new Date();
+    } else if (deliveryStatus === 'DELIVERED') {
+      updateData.deliveredAt = new Date();
+    } else if (deliveryStatus === 'FAILED') {
+      updateData.failureReason = failureReason?.trim();
+    }
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: updateData,
+      include: {
+        courier: true,
+        items: true,
+        customer: true,
+      },
+    });
+
+    // Handle DELIVERED: transition main order status to COMPLETED (triggers Phase 3 loyalty points) & free courier
+    if (deliveryStatus === 'DELIVERED') {
+      await this.updateOrderStatus(orderId, 'COMPLETED');
+      if (order.courierId) {
+        await this.prisma.courier.update({
+          where: { id: order.courierId },
+          data: { status: 'AVAILABLE' },
+        });
+      }
+    }
+
+    // Handle FAILED: free courier back to AVAILABLE
+    if (deliveryStatus === 'FAILED' && order.courierId) {
+      await this.prisma.courier.update({
+        where: { id: order.courierId },
+        data: { status: 'AVAILABLE' },
+      });
+    }
+
+    this.logger.log(`Order ${order.orderNumber} delivery status updated to ${deliveryStatus}`);
+
+    // Broadcast WS event
+    this.eventsGateway.emitDeliveryStatusChanged(updatedOrder.branchId, {
+      orderId: updatedOrder.id,
+      deliveryStatus,
+      order: updatedOrder,
+    });
 
     return updatedOrder;
   }

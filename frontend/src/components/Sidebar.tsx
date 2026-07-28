@@ -9,7 +9,9 @@ import {
   ShoppingBag, 
   QrCode,
   ShieldCheck,
-  Users
+  Users,
+  Truck,
+  Bike
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -21,6 +23,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   const menuItems = [
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
     { id: 'crm', label: 'CRM и Лояльность', icon: Users },
+    { id: 'delivery', label: 'Курьерская доставка', icon: Truck },
+    { id: 'courier-app', label: 'Экран курьера', icon: Bike },
     { id: 'warehouse', label: 'Склад и Остатки', icon: Warehouse },
     { id: 'menu', label: 'Меню и Техкарты', icon: BookOpen },
     { id: 'kds', label: 'KDS (Экран кухни)', icon: ChefHat },

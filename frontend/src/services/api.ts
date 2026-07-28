@@ -221,3 +221,70 @@ export async function fetchNotificationLogs() {
   const res = await fetch(`${API_BASE}/notifications/logs`);
   return await res.json();
 }
+
+/* Phase 4: Courier & Delivery APIs */
+export async function fetchCouriers(branchId?: string, status?: string) {
+  const params = new URLSearchParams();
+  if (branchId) params.append('branchId', branchId);
+  if (status) params.append('status', status);
+
+  const res = await fetch(`${API_BASE}/couriers?${params.toString()}`);
+  return await res.json();
+}
+
+export async function fetchCourierById(id: string) {
+  const res = await fetch(`${API_BASE}/couriers/${id}`);
+  return await res.json();
+}
+
+export async function createCourier(data: { name: string; phone: string; vehicleType: string }) {
+  const res = await fetch(`${API_BASE}/couriers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Ошибка создания курьера');
+  }
+  return await res.json();
+}
+
+export async function updateCourierStatus(id: string, status: 'OFFLINE' | 'AVAILABLE' | 'ON_DELIVERY') {
+  const res = await fetch(`${API_BASE}/couriers/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Ошибка изменения статуса курьера');
+  }
+  return await res.json();
+}
+
+export async function assignCourierToOrder(orderId: string, courierId: string) {
+  const res = await fetch(`${API_BASE}/orders/${orderId}/assign-courier`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ courierId }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Ошибка назначения курьера');
+  }
+  return await res.json();
+}
+
+export async function updateDeliveryStatus(orderId: string, status: string, failureReason?: string) {
+  const res = await fetch(`${API_BASE}/orders/${orderId}/delivery-status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, failureReason }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Ошибка обновления статуса доставки');
+  }
+  return await res.json();
+}

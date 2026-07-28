@@ -19,4 +19,17 @@ export class OrdersController {
   async updateOrderStatus(@Param('id') id: string, @Body() body: { status: string }) {
     return await this.ordersService.updateOrderStatus(id, body.status);
   }
+
+  @Post('orders/:id/assign-courier')
+  async assignCourier(@Param('id') id: string, @Body() body: { courierId: string }) {
+    return await this.ordersService.assignCourier(id, body.courierId);
+  }
+
+  @Patch('orders/:id/delivery-status')
+  async updateDeliveryStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string; failureReason?: string },
+  ) {
+    return await this.ordersService.updateDeliveryStatus(id, body.status, body.failureReason);
+  }
 }

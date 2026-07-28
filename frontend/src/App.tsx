@@ -9,6 +9,8 @@ import { KDSView } from './components/KDSView';
 import { OrdersView } from './components/OrdersView';
 import { GuestMenuView } from './public/GuestMenuView';
 import { CRMView } from './components/CRMView';
+import { DeliveryView } from './components/DeliveryView';
+import { CourierView } from './components/CourierView';
 import { 
   fetchDashboardSummary, 
   fetchBalances, 
@@ -56,6 +58,20 @@ export function App() {
     return <GuestMenuView qrSlug="table-7" onClosePreview={() => setActiveTab('dashboard')} />;
   }
 
+  if (activeTab === 'courier-app') {
+    return (
+      <div style={{ background: '#090d14', minHeight: '100vh' }}>
+        <div style={{ padding: '10px 16px', background: '#121824', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button className="btn btn-secondary" onClick={() => setActiveTab('dashboard')}>
+            ← Назад в панель Restaurant OS
+          </button>
+          <span className="badge badge-info">PWA Courier Emulator</span>
+        </div>
+        <CourierView />
+      </div>
+    );
+  }
+
   return (
     <div className="app-layout">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -71,6 +87,9 @@ export function App() {
             )}
             {activeTab === 'crm' && (
               <CRMView />
+            )}
+            {activeTab === 'delivery' && (
+              <DeliveryView />
             )}
             {activeTab === 'warehouse' && (
               <WarehouseView balances={balances} onRefresh={loadAllData} />

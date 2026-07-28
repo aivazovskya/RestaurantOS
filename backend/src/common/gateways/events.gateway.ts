@@ -71,4 +71,16 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(roomName).emit('waiter.called', payload);
     this.logger.log(`WS Event "waiter.called" emitted to room ${roomName}: ${payload.tableLabel}`);
   }
+
+  emitDeliveryAssigned(branchId: string, order: any) {
+    const roomName = `branch_${branchId || 'default-branch'}`;
+    this.server.to(roomName).emit('delivery.assigned', order);
+    this.logger.log(`WS Event "delivery.assigned" emitted to room ${roomName} for Order ${order.id}`);
+  }
+
+  emitDeliveryStatusChanged(branchId: string, payload: { orderId: string; deliveryStatus: string; order: any }) {
+    const roomName = `branch_${branchId || 'default-branch'}`;
+    this.server.to(roomName).emit('delivery.status_changed', payload);
+    this.logger.log(`WS Event "delivery.status_changed" emitted to room ${roomName}: Order ${payload.orderId} -> ${payload.deliveryStatus}`);
+  }
 }
