@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Production builds
+dist/
+build/
+.next/
+out/
+
+# Database files & Logs
+*.db
+*.db-journal
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+backend/data/
+*.log
+logs/
+
+# Environment variables & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
