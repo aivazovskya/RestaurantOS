@@ -1,0 +1,21 @@
+import { Module } from '@nestjs/common';
+import { PrismaModule } from './prisma/prisma.module';
+import { SeedService } from './prisma/seed.service';
+import { OrganizationModule } from './modules/organization/organization.module';
+import { WarehouseModule } from './modules/warehouse/warehouse.module';
+import { MenuModule } from './modules/menu/menu.module';
+import { AutoDeductionModule } from './modules/auto-deduction/auto-deduction.module';
+import { NexiumPosModule } from './modules/nexium-pos/nexium-pos.module';
+
+@Module({
+  imports: [
+    PrismaModule,
+    OrganizationModule,
+    WarehouseModule,
+    MenuModule,
+    AutoDeductionModule,
+    NexiumPosModule,
+  ],
+  providers: [SeedService],
+})
+export class AppModule {}
