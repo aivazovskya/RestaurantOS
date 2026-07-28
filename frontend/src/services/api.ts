@@ -288,3 +288,73 @@ export async function updateDeliveryStatus(orderId: string, status: string, fail
   }
   return await res.json();
 }
+
+/* Phase 5: Analytics & AI Module APIs */
+export async function fetchRevenueAnalytics(from?: string, to?: string, groupBy: string = 'day') {
+  const params = new URLSearchParams();
+  if (from) params.append('from', from);
+  if (to) params.append('to', to);
+  params.append('groupBy', groupBy);
+
+  const res = await fetch(`${API_BASE}/analytics/revenue?${params.toString()}`);
+  return await res.json();
+}
+
+export async function fetchTopItemsAnalytics(from?: string, to?: string, limit: number = 10) {
+  const params = new URLSearchParams();
+  if (from) params.append('from', from);
+  if (to) params.append('to', to);
+  params.append('limit', String(limit));
+
+  const res = await fetch(`${API_BASE}/analytics/top-items?${params.toString()}`);
+  return await res.json();
+}
+
+export async function fetchStockIncidentsAnalytics(from?: string, to?: string) {
+  const params = new URLSearchParams();
+  if (from) params.append('from', from);
+  if (to) params.append('to', to);
+
+  const res = await fetch(`${API_BASE}/analytics/stock-incidents?${params.toString()}`);
+  return await res.json();
+}
+
+export async function fetchStopListFrequencyAnalytics(from?: string, to?: string) {
+  const params = new URLSearchParams();
+  if (from) params.append('from', from);
+  if (to) params.append('to', to);
+
+  const res = await fetch(`${API_BASE}/analytics/stoplist-frequency?${params.toString()}`);
+  return await res.json();
+}
+
+export async function fetchPurchaseForecast(branchId?: string, days: number = 14) {
+  const params = new URLSearchParams();
+  if (branchId) params.append('branchId', branchId);
+  params.append('days', String(days));
+
+  const res = await fetch(`${API_BASE}/analytics/purchase-forecast?${params.toString()}`);
+  return await res.json();
+}
+
+export async function fetchFlaggedOperations(from?: string, to?: string) {
+  const params = new URLSearchParams();
+  if (from) params.append('from', from);
+  if (to) params.append('to', to);
+
+  const res = await fetch(`${API_BASE}/analytics/flagged-operations?${params.toString()}`);
+  return await res.json();
+}
+
+export async function sendAiChatMessage(message: string, sessionId?: string) {
+  const res = await fetch(`${API_BASE}/ai/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, sessionId }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Ошибка обработки AI-сообщения');
+  }
+  return await res.json();
+}

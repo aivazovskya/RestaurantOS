@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   Users,
   Truck,
-  Bike
+  Bike,
+  Sparkles
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -22,6 +23,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
+    { id: 'analytics', label: 'AI Аналитика & Чат', icon: Sparkles },
     { id: 'crm', label: 'CRM и Лояльность', icon: Users },
     { id: 'delivery', label: 'Курьерская доставка', icon: Truck },
     { id: 'courier-app', label: 'Экран курьера', icon: Bike },

@@ -14,6 +14,8 @@ import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { CouponModule } from './modules/coupon/coupon.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { CourierModule } from './modules/courier/courier.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AiChatModule } from './modules/ai-chat/ai-chat.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { CourierModule } from './modules/courier/courier.module';
     CouponModule,
     NotificationModule,
     CourierModule,
+    AnalyticsModule,
+    AiChatModule,
   ],
   providers: [SeedService],
 })

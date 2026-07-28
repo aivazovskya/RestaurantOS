@@ -11,6 +11,7 @@ import { GuestMenuView } from './public/GuestMenuView';
 import { CRMView } from './components/CRMView';
 import { DeliveryView } from './components/DeliveryView';
 import { CourierView } from './components/CourierView';
+import { AnalyticsView } from './components/AnalyticsView';
 import { 
   fetchDashboardSummary, 
   fetchBalances, 
@@ -84,6 +85,9 @@ export function App() {
           <>
             {activeTab === 'dashboard' && (
               <DashboardView summaryData={summaryData} onNavigateTab={setActiveTab} />
+            )}
+            {activeTab === 'analytics' && (
+              <AnalyticsView />
             )}
             {activeTab === 'crm' && (
               <CRMView />
