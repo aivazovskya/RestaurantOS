@@ -7,6 +7,8 @@ import { MenuModule } from './modules/menu/menu.module';
 import { AutoDeductionModule } from './modules/auto-deduction/auto-deduction.module';
 import { NexiumPosModule } from './modules/nexium-pos/nexium-pos.module';
 import { StopListModule } from './modules/stop-list/stop-list.module';
+import { TableModule } from './modules/table/table.module';
+import { OrdersModule } from './modules/orders/orders.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { StopListModule } from './modules/stop-list/stop-list.module';
     AutoDeductionModule,
     NexiumPosModule,
     StopListModule,
+    TableModule,
+    OrdersModule,
   ],
   providers: [SeedService],
 })

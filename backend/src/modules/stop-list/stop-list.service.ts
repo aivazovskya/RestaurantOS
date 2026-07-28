@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecipeResolverService } from '../../common/services/recipe-resolver.service';
+import { EventsGateway } from '../../common/gateways/events.gateway';
 
 @Injectable()
 export class StopListService {
@@ -9,6 +10,7 @@ export class StopListService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly recipeResolver: RecipeResolverService,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   /**
@@ -28,6 +30,8 @@ export class StopListService {
     }
 
     if (!targetWarehouse) return;
+
+    const branchId = targetWarehouse.branchId;
 
     // Fetch all MenuItems with their recipe cards
     const menuItems = await this.prisma.menuItem.findMany({
@@ -49,7 +53,7 @@ export class StopListService {
         continue;
       }
 
-      // 1. Skip items under MANUAL stop-list (manual manager override must not be overwritten automatically)
+      // 1. Skip items under MANUAL stop-list
       if (menuItem.stopListSource === 'MANUAL') {
         continue;
       }
@@ -60,14 +64,12 @@ export class StopListService {
         1.0,
       );
 
-      // Check if this menuItem is affected by the changed ingredient IDs
       const isAffected = requirements.some((req) => affectedIdsSet.has(req.ingredientId));
       if (!isAffected && menuItem.isAvailable) {
-        // If not affected and currently available, no state transition needed
         continue;
       }
 
-      // 3. Evaluate stock sufficiency for all required ingredients
+      // 3. Evaluate stock sufficiency
       let shortageReason: string | null = null;
 
       for (const req of requirements) {
@@ -83,16 +85,15 @@ export class StopListService {
         const availableQty = balance ? balance.quantity : 0.0;
 
         if (availableQty < req.requiredGrossAmount) {
-          const shortageAmount = req.requiredGrossAmount - availableQty;
           shortageReason = `Нет: ${req.name} (осталось ${Math.max(0, availableQty)} ${req.mainUnit}, нужно ${req.requiredGrossAmount} ${req.mainUnit})`;
-          break; // Stop at first shortage
+          break;
         }
       }
 
       // 4. Handle State Transitions
       if (shortageReason && menuItem.isAvailable) {
         // TRANSITION: Available -> Auto Stop-List
-        await this.prisma.menuItem.update({
+        const updated = await this.prisma.menuItem.update({
           where: { id: menuItem.id },
           data: {
             isAvailable: false,
@@ -112,9 +113,19 @@ export class StopListService {
         });
 
         this.logger.warn(`AUTO STOP-LIST ACTIVATED for "${menuItem.name}": ${shortageReason}`);
+
+        // Emit WS Event
+        this.eventsGateway.emitStopListChanged(branchId, {
+          menuItemId: menuItem.id,
+          posItemId: menuItem.posItemId,
+          isAvailable: false,
+          stopListSource: 'AUTO',
+          stopListReason: shortageReason,
+        });
+
       } else if (!shortageReason && !menuItem.isAvailable && menuItem.stopListSource === 'AUTO') {
         // TRANSITION: Auto Stop-List -> Available (Stock restored)
-        await this.prisma.menuItem.update({
+        const updated = await this.prisma.menuItem.update({
           where: { id: menuItem.id },
           data: {
             isAvailable: true,
@@ -134,6 +145,15 @@ export class StopListService {
         });
 
         this.logger.log(`AUTO STOP-LIST CLEARED for "${menuItem.name}": Stock restored.`);
+
+        // Emit WS Event
+        this.eventsGateway.emitStopListChanged(branchId, {
+          menuItemId: menuItem.id,
+          posItemId: menuItem.posItemId,
+          isAvailable: true,
+          stopListSource: null,
+          stopListReason: null,
+        });
       }
     }
   }
@@ -179,12 +199,21 @@ export class StopListService {
       },
     });
 
+    // Resolve branch ID for WS broadcast
+    const branch = await this.prisma.branch.findFirst();
+    const branchId = branch ? branch.id : 'default-branch';
+
+    this.eventsGateway.emitStopListChanged(branchId, {
+      menuItemId: menuItem.id,
+      posItemId: menuItem.posItemId,
+      isAvailable,
+      stopListSource,
+      stopListReason,
+    });
+
     return updated;
   }
 
-  /**
-   * Returns all items currently on the stop-list.
-   */
   async getStopList() {
     return await this.prisma.menuItem.findMany({
       where: { isAvailable: false },
@@ -192,9 +221,6 @@ export class StopListService {
     });
   }
 
-  /**
-   * Returns audit log of StopListEvents.
-   */
   async getStopListHistory() {
     return await this.prisma.stopListEvent.findMany({
       orderBy: { createdAt: 'desc' },

@@ -27,8 +27,20 @@ model Branch {
   warehouses      Warehouse[]
   posIntegrations POSIntegration[]
   users           UserBranch[]
+  diningTables    DiningTable[]
+  orders          Order[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+}
+
+model DiningTable {
+  id        String   @id @default(uuid())
+  branchId  String
+  label     String   // e.g. "Стол 7"
+  qrSlug    String   @unique // e.g. "table-7"
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  orders    Order[]
+  createdAt DateTime @default(now())
 }
 
 model Warehouse {
@@ -104,7 +116,7 @@ model MenuItem {
   imageUrl          String?
   isAvailable       Boolean      @default(true)
   stopListSource    String?      // "AUTO" | "MANUAL" | null
-  stopListReason    String?      // Человекочитаемая причина ("Нет: Фарш говяжий (осталось 0.04 KG, нужно 0.16 KG)")
+  stopListReason    String?      // Человекочитаемая причина
   stopListUpdatedAt DateTime?
   recipeCard        RecipeCard?
   createdAt         DateTime     @default(now())
@@ -156,8 +168,8 @@ model StockBalance {
 model StockMovement {
   id          String              @id @default(uuid())
   warehouseId String
-  type        String              // RECEIPT, AUTO_DEDUCTION, MANUAL_WRITE_OFF, INVENTORY_ADJUST
-  referenceId String?             // ID чека Nexium или номер накладной
+  type        String              // RECEIPT, AUTO_DEDUCTION, MANUAL_WRITE_OFF, INVENTORY_ADJUST, ORDER_CANCELLATION_REVERSAL
+  referenceId String?             // ID чека Nexium или ONLINE-id
   comment     String?
   createdAt   DateTime            @default(now())
   warehouse   Warehouse           @relation(fields: [warehouseId], references: [id])
@@ -168,7 +180,7 @@ model StockMovementItem {
   id              String        @id @default(uuid())
   stockMovementId String
   ingredientId    String
-  quantity        Float         // Отрицательное = списание, Положительное = приход
+  quantity        Float         // Отрицательное = списание, Положительное = приход / реверс
   unitCost        Float         // Себестоимость KZT на момент операции
   stockMovement   StockMovement @relation(fields: [stockMovementId], references: [id], onDelete: Cascade)
   ingredient      Ingredient    @relation(fields: [ingredientId], references: [id])
@@ -183,4 +195,31 @@ model DeductionIncident {
   availableQty   Float
   shortageQty    Float
   createdAt      DateTime @default(now())
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  branchId      String
+  orderNumber   String      // e.g. "ORD-1001"
+  type          String      // "DINE_IN_QR" | "PICKUP" | "DELIVERY"
+  status        String      @default("NEW") // "NEW" | "ACCEPTED" | "PREPARING" | "READY" | "COMPLETED" | "CANCELLED"
+  tableId       String?
+  customerPhone String?
+  totalAmount   Float
+  comment       String?
+  branch        Branch      @relation(fields: [branchId], references: [id])
+  table         DiningTable? @relation(fields: [tableId], references: [id])
+  items         OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  posItemId String   // Ссылка на MenuItem.posItemId
+  name      String
+  quantity  Int
+  price     Float
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }

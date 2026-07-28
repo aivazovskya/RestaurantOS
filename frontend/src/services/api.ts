@@ -93,3 +93,54 @@ export async function restoreManualStop(menuItemId: string) {
   });
   return await res.json();
 }
+
+/* Phase 2: Table & QR-Menu APIs */
+export async function fetchTables() {
+  const res = await fetch(`${API_BASE}/tables`);
+  return await res.json();
+}
+
+export async function fetchPublicMenu(qrSlug: string) {
+  const res = await fetch(`${API_BASE}/public/menu/${qrSlug}`);
+  return await res.json();
+}
+
+export async function callWaiter(qrSlug: string) {
+  const res = await fetch(`${API_BASE}/public/tables/${qrSlug}/call-waiter`, {
+    method: 'POST',
+  });
+  return await res.json();
+}
+
+/* Phase 2: Orders & KDS APIs */
+export async function createPublicOrder(data: any) {
+  const res = await fetch(`${API_BASE}/public/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Ошибка создания заказа');
+  }
+  return await res.json();
+}
+
+export async function fetchOrders(status?: string) {
+  const url = status ? `${API_BASE}/orders?status=${status}` : `${API_BASE}/orders`;
+  const res = await fetch(url);
+  return await res.json();
+}
+
+export async function updateOrderStatus(orderId: string, status: string) {
+  const res = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Ошибка обновления статуса');
+  }
+  return await res.json();
+}

@@ -9,10 +9,10 @@ export declare class MenuService {
             items: ({
                 ingredient: {
                     id: string;
-                    name: string;
                     organizationId: string;
-                    code: string | null;
+                    name: string;
                     category: string;
+                    code: string | null;
                     mainUnit: string;
                     costPerUnit: number;
                     minStockLevel: number;
@@ -22,48 +22,48 @@ export declare class MenuService {
                 };
             } & {
                 id: string;
+                recipeCardId: string;
                 ingredientId: string;
                 grossAmount: number;
                 netAmount: number;
                 unit: string;
-                recipeCardId: string;
             })[];
         } & {
             id: string;
             createdAt: Date;
-            updatedAt: Date;
+            menuItemId: string | null;
             yieldAmount: number;
             yieldUnit: string;
-            menuItemId: string | null;
+            updatedAt: Date;
         }) | null;
-        id: string;
-        name: string;
-        createdAt: Date;
-        organizationId: string;
-        category: string;
-        posItemId: string;
         description: string | null;
+        id: string;
+        posItemId: string;
+        organizationId: string;
+        name: string;
+        category: string;
         sellingPrice: number;
         imageUrl: string | null;
         isAvailable: boolean;
         stopListSource: string | null;
         stopListReason: string | null;
         stopListUpdatedAt: Date | null;
+        createdAt: Date;
     }[]>;
     createMenuItem(data: any): Promise<{
-        id: string;
-        name: string;
-        createdAt: Date;
-        organizationId: string;
-        category: string;
-        posItemId: string;
         description: string | null;
+        id: string;
+        posItemId: string;
+        organizationId: string;
+        name: string;
+        category: string;
         sellingPrice: number;
         imageUrl: string | null;
         isAvailable: boolean;
         stopListSource: string | null;
         stopListReason: string | null;
         stopListUpdatedAt: Date | null;
+        createdAt: Date;
     }>;
     saveRecipeCard(menuItemId: string, recipeItems: Array<{
         ingredientId: string;
@@ -74,10 +74,10 @@ export declare class MenuService {
         items: ({
             ingredient: {
                 id: string;
-                name: string;
                 organizationId: string;
-                code: string | null;
+                name: string;
                 category: string;
+                code: string | null;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
@@ -87,18 +87,18 @@ export declare class MenuService {
             };
         } & {
             id: string;
+            recipeCardId: string;
             ingredientId: string;
             grossAmount: number;
             netAmount: number;
             unit: string;
-            recipeCardId: string;
         })[];
     } & {
         id: string;
         createdAt: Date;
-        updatedAt: Date;
+        menuItemId: string | null;
         yieldAmount: number;
         yieldUnit: string;
-        menuItemId: string | null;
+        updatedAt: Date;
     }>;
 }

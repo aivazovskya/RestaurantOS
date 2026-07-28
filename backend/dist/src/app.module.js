@@ -16,6 +16,8 @@ const menu_module_1 = require("./modules/menu/menu.module");
 const auto_deduction_module_1 = require("./modules/auto-deduction/auto-deduction.module");
 const nexium_pos_module_1 = require("./modules/nexium-pos/nexium-pos.module");
 const stop_list_module_1 = require("./modules/stop-list/stop-list.module");
+const table_module_1 = require("./modules/table/table.module");
+const orders_module_1 = require("./modules/orders/orders.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -29,6 +31,8 @@ exports.AppModule = AppModule = __decorate([
             auto_deduction_module_1.AutoDeductionModule,
             nexium_pos_module_1.NexiumPosModule,
             stop_list_module_1.StopListModule,
+            table_module_1.TableModule,
+            orders_module_1.OrdersModule,
         ],
         providers: [seed_service_1.SeedService],
     })

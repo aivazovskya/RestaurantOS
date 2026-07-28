@@ -6,10 +6,10 @@ export declare class WarehouseService {
     constructor(prisma: PrismaService, stopListService: StopListService);
     getIngredients(): Promise<{
         id: string;
-        name: string;
         organizationId: string;
-        code: string | null;
+        name: string;
         category: string;
+        code: string | null;
         mainUnit: string;
         costPerUnit: number;
         minStockLevel: number;
@@ -19,10 +19,10 @@ export declare class WarehouseService {
     }[]>;
     createIngredient(data: any): Promise<{
         id: string;
-        name: string;
         organizationId: string;
-        code: string | null;
+        name: string;
         category: string;
+        code: string | null;
         mainUnit: string;
         costPerUnit: number;
         minStockLevel: number;
@@ -56,10 +56,10 @@ export declare class WarehouseService {
         items: ({
             ingredient: {
                 id: string;
-                name: string;
                 organizationId: string;
-                code: string | null;
+                name: string;
                 category: string;
+                code: string | null;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
@@ -69,8 +69,8 @@ export declare class WarehouseService {
             };
         } & {
             id: string;
-            quantity: number;
             ingredientId: string;
+            quantity: number;
             unitCost: number;
             stockMovementId: string;
         })[];
@@ -79,8 +79,8 @@ export declare class WarehouseService {
         createdAt: Date;
         warehouseId: string;
         type: string;
-        referenceId: string | null;
         comment: string | null;
+        referenceId: string | null;
     }>;
     addManualWriteOff(dto: {
         warehouseId?: string;
@@ -93,10 +93,10 @@ export declare class WarehouseService {
         items: ({
             ingredient: {
                 id: string;
-                name: string;
                 organizationId: string;
-                code: string | null;
+                name: string;
                 category: string;
+                code: string | null;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
@@ -106,8 +106,8 @@ export declare class WarehouseService {
             };
         } & {
             id: string;
-            quantity: number;
             ingredientId: string;
+            quantity: number;
             unitCost: number;
             stockMovementId: string;
         })[];
@@ -116,23 +116,23 @@ export declare class WarehouseService {
         createdAt: Date;
         warehouseId: string;
         type: string;
-        referenceId: string | null;
         comment: string | null;
+        referenceId: string | null;
     }>;
     getMovements(): Promise<({
         warehouse: {
+            branchId: string;
             id: string;
             name: string;
             isMain: boolean;
-            branchId: string;
         };
         items: ({
             ingredient: {
                 id: string;
-                name: string;
                 organizationId: string;
-                code: string | null;
+                name: string;
                 category: string;
+                code: string | null;
                 mainUnit: string;
                 costPerUnit: number;
                 minStockLevel: number;
@@ -142,8 +142,8 @@ export declare class WarehouseService {
             };
         } & {
             id: string;
-            quantity: number;
             ingredientId: string;
+            quantity: number;
             unitCost: number;
             stockMovementId: string;
         })[];
@@ -152,8 +152,8 @@ export declare class WarehouseService {
         createdAt: Date;
         warehouseId: string;
         type: string;
-        referenceId: string | null;
         comment: string | null;
+        referenceId: string | null;
     })[]>;
     getIncidents(): Promise<{
         id: string;

@@ -6,26 +6,26 @@ export declare class OrganizationController {
         organization: ({
             branches: ({
                 warehouses: {
+                    branchId: string;
                     id: string;
                     name: string;
                     isMain: boolean;
-                    branchId: string;
                 }[];
             } & {
                 id: string;
+                organizationId: string;
                 name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 address: string | null;
                 phone: string | null;
-                organizationId: string;
             })[];
         } & {
             id: string;
             name: string;
-            bin: string | null;
             createdAt: Date;
             updatedAt: Date;
+            bin: string | null;
         }) | null;
         stats: {
             totalStockValue: number;
@@ -40,10 +40,10 @@ export declare class OrganizationController {
             items: ({
                 ingredient: {
                     id: string;
-                    name: string;
                     organizationId: string;
-                    code: string | null;
+                    name: string;
                     category: string;
+                    code: string | null;
                     mainUnit: string;
                     costPerUnit: number;
                     minStockLevel: number;
@@ -53,8 +53,8 @@ export declare class OrganizationController {
                 };
             } & {
                 id: string;
-                quantity: number;
                 ingredientId: string;
+                quantity: number;
                 unitCost: number;
                 stockMovementId: string;
             })[];
@@ -63,8 +63,8 @@ export declare class OrganizationController {
             createdAt: Date;
             warehouseId: string;
             type: string;
-            referenceId: string | null;
             comment: string | null;
+            referenceId: string | null;
         })[];
     }>;
 }

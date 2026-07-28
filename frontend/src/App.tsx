@@ -5,6 +5,9 @@ import { WarehouseView } from './components/WarehouseView';
 import { MenuView } from './components/MenuView';
 import { MovementsView } from './components/MovementsView';
 import { SimulatorView } from './components/SimulatorView';
+import { KDSView } from './components/KDSView';
+import { OrdersView } from './components/OrdersView';
+import { GuestMenuView } from './public/GuestMenuView';
 import { 
   fetchDashboardSummary, 
   fetchBalances, 
@@ -48,6 +51,10 @@ export function App() {
     loadAllData();
   }, []);
 
+  if (activeTab === 'guest-menu') {
+    return <GuestMenuView qrSlug="table-7" onClosePreview={() => setActiveTab('dashboard')} />;
+  }
+
   return (
     <div className="app-layout">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -66,6 +73,12 @@ export function App() {
             )}
             {activeTab === 'menu' && (
               <MenuView menuItems={menuItems} onRefresh={loadAllData} />
+            )}
+            {activeTab === 'kds' && (
+              <KDSView onRefreshOrders={loadAllData} />
+            )}
+            {activeTab === 'orders' && (
+              <OrdersView />
             )}
             {activeTab === 'movements' && (
               <MovementsView movements={movements} incidents={incidents} />
