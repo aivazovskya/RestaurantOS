@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ChefHat, Clock, CheckCircle2, Play, AlertCircle, RefreshCw, Volume2 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
-import { fetchOrders, updateOrderStatus } from '../services/api';
+import { fetchOrders, updateOrderStatus, fetchTables } from '../services/api';
 
 interface KDSViewProps {
+  branchId?: string;
   onRefreshOrders?: () => void;
 }
 
-export const KDSView: React.FC<KDSViewProps> = ({ onRefreshOrders }) => {
+export const KDSView: React.FC<KDSViewProps> = ({ branchId: propBranchId, onRefreshOrders }) => {
   const [orders, setOrders] = useState<any[]>([]);
+  const [branchId, setBranchId] = useState<string | null>(propBranchId || null);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -24,12 +26,27 @@ export const KDSView: React.FC<KDSViewProps> = ({ onRefreshOrders }) => {
   useEffect(() => {
     loadAllOrders();
 
+    if (!propBranchId) {
+      fetchTables()
+        .then((tables) => {
+          if (tables && tables.length > 0 && tables[0].branchId) {
+            setBranchId(tables[0].branchId);
+          }
+        })
+        .catch((e) => console.error('Error loading tables for KDS branchId:', e));
+    }
+
     // Ticking timer for real-time order elapsed duration
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [propBranchId]);
 
-    // Socket.IO subscription for live order events
+  useEffect(() => {
+    if (!branchId) return;
+
+    // Socket.IO subscription for live order events with real branchId
     const socket: Socket = io('http://localhost:3001/events', {
-      query: { branchId: 'default-branch' },
+      query: { branchId },
     });
 
     socket.on('order.created', (newOrder: any) => {
@@ -45,10 +62,9 @@ export const KDSView: React.FC<KDSViewProps> = ({ onRefreshOrders }) => {
     });
 
     return () => {
-      clearInterval(interval);
       socket.disconnect();
     };
-  }, []);
+  }, [branchId]);
 
   const handleStatusChange = async (orderId: string, nextStatus: string) => {
     try {

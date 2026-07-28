@@ -80,15 +80,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ summaryData, onNav
       </div>
 
       {/* Integration Banner */}
-      <div className="card" style={{ marginBottom: '28px', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.05))', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+      <div className="card" style={{ marginBottom: '28px', background: 'var(--color-warm-taupe)', borderColor: 'var(--color-stone)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ padding: '12px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>
-              <CheckCircle2 size={28} />
+            <div style={{ padding: '10px', borderRadius: '9999px', background: 'var(--color-eggshell)', color: 'var(--color-ink)', border: '1px solid var(--color-stone)' }}>
+              <CheckCircle2 size={24} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Интеграция с POS-кассой Nexium активна</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 500, color: 'var(--color-ink)' }}>Интеграция с POS-кассой Nexium активна</h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--color-smoke)', marginTop: '2px' }}>
                 Каждая транзакция из Nexium транслируется через Event Bus и мгновенно списывает ингредиенты по технологической карте блюда.
               </p>
             </div>
@@ -100,8 +100,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ summaryData, onNav
       {/* Activity Log Grid */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Activity size={18} color="var(--primary)" />
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 300, letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-ink)', fontFamily: 'var(--font-waldenburg)' }}>
+            <Activity size={18} color="var(--color-ink)" />
             Последние движения по складам
           </h2>
           <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={() => onNavigateTab('movements')}>

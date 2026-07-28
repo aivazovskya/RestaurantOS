@@ -65,6 +65,7 @@ export class TableService {
     return {
       table: {
         id: table.id,
+        branchId: table.branchId,
         label: table.label,
         qrSlug: table.qrSlug,
         branchName: table.branch?.name || 'Almaty Dostyk',

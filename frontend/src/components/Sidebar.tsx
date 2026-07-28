@@ -31,22 +31,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   return (
     <aside className="sidebar">
       {/* Brand Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-        <div style={{ background: 'var(--color-signal-blue)', width: '36px', height: '36px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ShieldCheck size={22} color="#fff" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '36px' }}>
+        <div style={{ background: 'var(--color-ink)', width: '38px', height: '38px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ShieldCheck size={22} color="#ffffff" />
         </div>
         <div>
-          <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--color-whiteout)', letterSpacing: '-0.02em' }}>
+          <div style={{ fontWeight: 500, fontSize: '1.1rem', color: 'var(--color-ink)', letterSpacing: '-0.02em' }}>
             Restaurant OS
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--color-signal-blue)', fontWeight: 600 }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--color-smoke)', fontWeight: 400 }}>
             Kazakhstan Core v2.0
           </div>
         </div>
       </div>
 
       {/* Navigation Links */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
               onClick={() => setActiveTab(item.id)}
               className={`nav-item ${isActive ? 'active' : ''}`}
             >
-              <Icon size={18} color={isActive ? 'var(--color-signal-blue)' : 'var(--color-twilight-blue)'} />
+              <Icon size={18} color={isActive ? '#ffffff' : 'var(--color-smoke)'} />
               <span>{item.label}</span>
             </button>
           );
@@ -65,12 +65,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       </nav>
 
       {/* Branch & POS Status Footer */}
-      <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
-        <div style={{ fontSize: '0.75rem', color: 'var(--color-twilight-blue)', marginBottom: '4px' }}>
-          Филиал: <strong>Almaty Dostyk</strong>
+      <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid var(--color-stone)' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--color-smoke)', marginBottom: '6px' }}>
+          Филиал: <strong style={{ color: 'var(--color-ink)', fontWeight: 500 }}>Almaty Dostyk</strong>
         </div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--color-emerald)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-emerald)' }}></span>
+        <div style={{ fontSize: '0.75rem', color: 'var(--color-forest)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--color-emerald)' }}></span>
           Nexium POS Connected
         </div>
       </div>
