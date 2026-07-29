@@ -1,11 +1,13 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as bcrypt from 'bcryptjs';
 
 export class CreateCourierDto {
   name: string;
   phone: string;
   vehicleType: 'CAR' | 'SCOOTER' | 'BICYCLE' | 'ON_FOOT';
   branchId?: string;
+  pinCode?: string;
 }
 
 @Injectable()
@@ -15,7 +17,7 @@ export class CourierService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Creates a new courier profile.
+   * Creates a new courier profile with auto-generated/custom hashed PIN code.
    */
   async createCourier(dto: CreateCourierDto) {
     if (!dto.name || !dto.phone || !dto.vehicleType) {
@@ -38,15 +40,53 @@ export class CourierService {
       branchId = mainBranch.id;
     }
 
-    return await this.prisma.courier.create({
+    const rawPinCode = dto.pinCode?.trim() || Math.floor(1000 + Math.random() * 9000).toString();
+    const hashedPinCode = await bcrypt.hash(rawPinCode, 10);
+
+    const courier = await this.prisma.courier.create({
       data: {
         name: dto.name,
         phone: cleanPhone,
+        pinCode: hashedPinCode,
         vehicleType: dto.vehicleType,
         status: 'OFFLINE',
         branchId,
       },
     });
+
+    this.logger.log(`Created courier ${courier.name} (${courier.phone}) with generated PIN.`);
+
+    return {
+      ...courier,
+      generatedPinCode: rawPinCode,
+    };
+  }
+
+  /**
+   * Resets PIN code for a courier and returns newly generated plain-text PIN.
+   */
+  async resetCourierPin(courierId: string, customPin?: string) {
+    const courier = await this.prisma.courier.findUnique({ where: { id: courierId } });
+    if (!courier) {
+      throw new NotFoundException(`Курьер с ID ${courierId} не найден.`);
+    }
+
+    const rawPinCode = customPin?.trim() || Math.floor(1000 + Math.random() * 9000).toString();
+    const hashedPinCode = await bcrypt.hash(rawPinCode, 10);
+
+    await this.prisma.courier.update({
+      where: { id: courierId },
+      data: { pinCode: hashedPinCode },
+    });
+
+    this.logger.log(`Reset PIN for courier ${courier.name} (${courier.phone}).`);
+
+    return {
+      id: courier.id,
+      name: courier.name,
+      phone: courier.phone,
+      generatedPinCode: rawPinCode,
+    };
   }
 
   /**

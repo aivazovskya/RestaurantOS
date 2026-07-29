@@ -37,12 +37,11 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
   }, [qrSlug]);
 
   useEffect(() => {
-    const branchId = menuData?.branchId;
-    if (!branchId) return;
+    if (!qrSlug) return;
 
-    // Subscribe to WebSockets for live stop-list updates with real branchId
+    // Subscribe to WebSockets for live stop-list updates via guestQrSlug
     const socket: Socket = io(`${WS_BASE}/events`, {
-      query: { branchId },
+      query: { guestQrSlug: qrSlug },
     });
 
     socket.on('stoplist.changed', (payload: any) => {
@@ -64,7 +63,7 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
     return () => {
       socket.disconnect();
     };
-  }, [menuData?.branchId]);
+  }, [qrSlug]);
 
   const categories = ['ALL', ...Array.from(new Set(items.map((i) => i.category)))];
 

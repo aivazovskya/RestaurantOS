@@ -331,7 +331,7 @@ export async function fetchCourierById(id: string) {
   return await res.json();
 }
 
-export async function createCourier(data: { name: string; phone: string; vehicleType: string }) {
+export async function createCourier(data: { name: string; phone: string; vehicleType: string; pinCode?: string }) {
   const res = await authFetch(`${API_BASE}/couriers`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -339,6 +339,18 @@ export async function createCourier(data: { name: string; phone: string; vehicle
   if (!res.ok) {
     const errorBody = await res.json();
     throw new Error(errorBody.message || 'Ошибка создания курьера');
+  }
+  return await res.json();
+}
+
+export async function resetCourierPin(id: string, pinCode?: string) {
+  const res = await authFetch(`${API_BASE}/couriers/${id}/reset-pin`, {
+    method: 'POST',
+    body: JSON.stringify({ pinCode }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.message || 'Ошибка сброса PIN-кода курьера');
   }
   return await res.json();
 }

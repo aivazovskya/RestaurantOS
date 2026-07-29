@@ -1,6 +1,6 @@
 # 🍽️ Restaurant OS Kazakhstan
 
-![Status](https://img.shields.io/badge/Status-Phase_5_Auth_%26_RBAC_Ready-emerald)
+![Status](https://img.shields.io/badge/Status-Phase_5_Auth_%26_RBAC_Audited-emerald)
 ![Backend](https://img.shields.io/badge/Backend-NestJS_11_%2B_Prisma_6-blue)
 ![Frontend](https://img.shields.io/badge/Frontend-React_19_%2B_Vite_8-cyan)
 ![Auth](https://img.shields.io/badge/Auth-JWT_%2B_CreativeID_SSO_Abstracted-purple)
@@ -20,9 +20,9 @@
                     ▼
  ┌──────────────────────────────────────────────┐      ┌─────────────────────────┐
  │          Restaurant OS Core Backend          │ ────►│ CreativeID Credential   │
- │  - JWT AuthGuard & RolesGuard (@Roles)       │      │ Provider (Future SSO)   │
+ │  - Strict JWT_SECRET Environment Guard       │      │ Provider (Future SSO)   │
  │  - Decoupled CredentialProvider Interface    │      └─────────────────────────┘
- │  - Real-time WebSockets Auth                 │
+ │  - Real-time WebSockets Auth & Guest Slug    │
  └──────────────────┬───────────────────────────┘
                     │ REST API (Bearer JWT) & WS (Token Handshake)
                     ▼
@@ -50,6 +50,18 @@
 
 ---
 
+## 🛡️ Безопасность и архитектурные решения по JWT
+
+1. **Строгая валидация `JWT_SECRET` при старте**:
+   - Отсутствие значения `JWT_SECRET` в переменных окружения вызовет немедленную ошибку инициализации сервера NestJS (`JwtStrategy`), исключая возможность запуска с компрометированным дефолтным секретом.
+2. **Хранение JWT токенов в `localStorage` (Пилотный компромисс UX/Security)**:
+   - В текущей демо/пилотной версии `accessToken` сохраняется в `localStorage` для предотвращения нежелательного разлогинивания пользователя при перезагрузке страницы.
+   - **Roadmap для Production**: Переход на хранение short-lived `accessToken` исключительно в оперативной памяти (React State) с установкой long-lived `refreshToken` в защищённую `httpOnly`, `Secure`, `SameSite=Strict` cookie на бэкенде.
+3. **Хэширование PIN-кодов курьеров**:
+   - PIN-коды новых курьеров, создаваемых диспетчером через UI, хэшируются с использованием `bcrypt`. Открытый PIN показывается один раз при создании/сбросе.
+
+---
+
 ## ✨ Реализованный функционал
 
 ### 🔹 Фаза 5 — Авторизация и RBAC (с заделом под CreativeID SSO)
@@ -62,8 +74,9 @@
   - `@Roles(...)` & `RolesGuard` на критических операциях (списания сырья, стоп-лист, корр. баллов).
 - **Безопасность WebSockets**:
   - Проверка JWT токена при handshake и сверка прав доступа пользователя к `branchId`.
-- **Курьерский PIN-вход**:
-  - Лёгкий вход по номеру телефона + 4-значному PIN-коду для курьеров в PWA-экране.
+  - Отдельный гостевой канал live-обновлений стоп-листа по `guestQrSlug`.
+- **Управление Курьерами & PIN-кодами**:
+  - Генерация, `bcrypt`-хэширование и сброс PIN-кода через эндпоинт `POST /api/v1/couriers/:id/reset-pin` и UI диспетчера.
 
 ---
 

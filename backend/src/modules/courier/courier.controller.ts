@@ -25,6 +25,12 @@ export class CourierController {
     return await this.courierService.getCourierById(id);
   }
 
+  @Roles('OWNER', 'MANAGER')
+  @Post(':id/reset-pin')
+  async resetPin(@Param('id') id: string, @Body() body?: { pinCode?: string }) {
+    return await this.courierService.resetCourierPin(id, body?.pinCode);
+  }
+
   @Roles('OWNER', 'MANAGER', 'COURIER')
   @Patch(':id/status')
   async updateStatus(
