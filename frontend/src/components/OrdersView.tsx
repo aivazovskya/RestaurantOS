@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, XCircle } from 'lucide-react';
-import { fetchOrders, updateOrderStatus } from '../services/api';
+import { io, Socket } from 'socket.io-client';
+import { fetchOrders, updateOrderStatus, fetchTables, WS_BASE } from '../services/api';
 
-export const OrdersView: React.FC = () => {
+
+interface OrdersViewProps {
+  branchId?: string;
+}
+
+export const OrdersView: React.FC<OrdersViewProps> = ({ branchId: propBranchId }) => {
   const [orders, setOrders] = useState<any[]>([]);
+  const [branchId, setBranchId] = useState<string | null>(propBranchId || null);
 
   const loadOrders = async () => {
     try {
@@ -16,7 +23,48 @@ export const OrdersView: React.FC = () => {
 
   useEffect(() => {
     loadOrders();
-  }, []);
+
+    if (!propBranchId) {
+      fetchTables()
+        .then((tables) => {
+          if (tables && tables.length > 0 && tables[0].branchId) {
+            setBranchId(tables[0].branchId);
+          }
+        })
+        .catch((e) => console.error('Error loading tables for OrdersView branchId:', e));
+    }
+  }, [propBranchId]);
+
+  useEffect(() => {
+    if (!branchId) return;
+
+    const socket: Socket = io(`${WS_BASE}/events`, {
+      query: { branchId },
+    });
+
+    socket.on('order.created', (newOrder: any) => {
+      setOrders((prev) => {
+        if (prev.some((o) => o.id === newOrder.id)) return prev;
+        return [newOrder, ...prev];
+      });
+    });
+
+    socket.on('order.status_changed', (payload: any) => {
+      setOrders((prev) =>
+        prev.map((o) => (o.id === payload.orderId ? payload.order : o))
+      );
+    });
+
+    socket.on('delivery.status_changed', (payload: any) => {
+      setOrders((prev) =>
+        prev.map((o) => (o.id === payload.orderId ? payload.order : o))
+      );
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [branchId]);
 
   const handleCancelOrder = async (orderId: string) => {
     if (!confirm('Вы действительно хотите отменить заказ? Если заказ был принят, сырье автоматически вернется на склад!')) return;

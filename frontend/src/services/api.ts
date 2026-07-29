@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:3001/api/v1';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+export const WS_BASE = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '') : 'http://localhost:3001');
+
 
 export async function fetchDashboardSummary() {
   const res = await fetch(`${API_BASE}/organization/dashboard-summary`);

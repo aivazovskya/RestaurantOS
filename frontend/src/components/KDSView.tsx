@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChefHat, Clock, CheckCircle2, Play, AlertCircle, RefreshCw, Volume2 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
-import { fetchOrders, updateOrderStatus, fetchTables } from '../services/api';
+import { fetchOrders, updateOrderStatus, fetchTables, WS_BASE } from '../services/api';
 
 interface KDSViewProps {
   branchId?: string;
@@ -45,12 +45,15 @@ export const KDSView: React.FC<KDSViewProps> = ({ branchId: propBranchId, onRefr
     if (!branchId) return;
 
     // Socket.IO subscription for live order events with real branchId
-    const socket: Socket = io('http://localhost:3001/events', {
+    const socket: Socket = io(`${WS_BASE}/events`, {
       query: { branchId },
     });
 
     socket.on('order.created', (newOrder: any) => {
-      setOrders((prev) => [newOrder, ...prev]);
+      setOrders((prev) => {
+        if (prev.some((o) => o.id === newOrder.id)) return prev;
+        return [newOrder, ...prev];
+      });
       setNotification(`🔔 НОВЫЙ ЗАКАЗ ${newOrder.orderNumber} (${newOrder.table?.label || 'Онлайн'})`);
       setTimeout(() => setNotification(null), 5000);
     });

@@ -10,13 +10,20 @@ import {
   fetchCouriers, 
   createCourier, 
   assignCourierToOrder, 
-  updateCourierStatus 
+  updateCourierStatus,
+  fetchTables,
+  WS_BASE 
 } from '../services/api';
 import { io } from 'socket.io-client';
 
-export const DeliveryView: React.FC = () => {
+interface DeliveryViewProps {
+  branchId?: string;
+}
+
+export const DeliveryView: React.FC<DeliveryViewProps> = ({ branchId: propBranchId }) => {
   const [orders, setOrders] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
+  const [branchId, setBranchId] = useState<string | null>(propBranchId || null);
 
   // New Courier Form State
   const [showCourierModal, setShowCourierModal] = useState(false);
@@ -46,14 +53,31 @@ export const DeliveryView: React.FC = () => {
   useEffect(() => {
     loadData();
 
-    // WebSockets live updates
-    const socket = io('http://localhost:3001/events', {
-      query: { branchId: 'default-branch' },
+    if (!propBranchId) {
+      fetchTables()
+        .then((tables) => {
+          if (tables && tables.length > 0 && tables[0].branchId) {
+            setBranchId(tables[0].branchId);
+          }
+        })
+        .catch((e) => console.error('Error loading tables for DeliveryView branchId:', e));
+    }
+  }, [propBranchId]);
+
+  useEffect(() => {
+    if (!branchId) return;
+
+    // WebSockets live updates with real branchId
+    const socket = io(`${WS_BASE}/events`, {
+      query: { branchId },
     });
 
     socket.on('order.created', (newOrder: any) => {
       if (newOrder.type === 'DELIVERY') {
-        setOrders((prev) => [newOrder, ...prev]);
+        setOrders((prev) => {
+          if (prev.some((o) => o.id === newOrder.id)) return prev;
+          return [newOrder, ...prev];
+        });
       }
     });
 
@@ -70,7 +94,7 @@ export const DeliveryView: React.FC = () => {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [branchId]);
 
   const handleCreateCourierSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

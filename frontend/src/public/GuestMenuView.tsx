@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Bell, CheckCircle, ShieldAlert, Plus, Minus, ArrowRight } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
-import { fetchPublicMenu, callWaiter, createPublicOrder } from '../services/api';
+import { fetchPublicMenu, callWaiter, createPublicOrder, WS_BASE } from '../services/api';
 
 interface GuestMenuViewProps {
   qrSlug?: string;
@@ -41,7 +41,7 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
     if (!branchId) return;
 
     // Subscribe to WebSockets for live stop-list updates with real branchId
-    const socket: Socket = io('http://localhost:3001/events', {
+    const socket: Socket = io(`${WS_BASE}/events`, {
       query: { branchId },
     });
 
@@ -102,7 +102,7 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
   };
 
   const [orderType, setOrderType] = useState<'DINE_IN_QR' | 'DELIVERY'>('DINE_IN_QR');
-  const [deliveryAddress, setDeliveryAddress] = useState('г. Алматы, пр. Достык 120, кв. 45');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [couponCode, setCouponCode] = useState('');
   const [appliedPoints, setAppliedPoints] = useState<number>(0);
@@ -313,7 +313,7 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
                 cursor: 'pointer',
               }}
             >
-              🍽️ Заказать в зале (Стол 7)
+              🍽️ Заказать в зале ({menuData?.label || 'в зале'})
             </button>
             <button
               type="button"
@@ -375,7 +375,7 @@ export const GuestMenuView: React.FC<GuestMenuViewProps> = ({ qrSlug = 'table-7'
             onClick={handlePlaceOrder}
           >
             <ShoppingBag size={18} />
-            {isSubmittingOrder ? 'Отправка заказа...' : orderType === 'DELIVERY' ? 'Оформить курьерскую доставку' : 'Оформить заказ на Стол 7'}
+            {isSubmittingOrder ? 'Отправка заказа...' : orderType === 'DELIVERY' ? 'Оформить курьерскую доставку' : `Оформить заказ (${menuData?.label || 'в зале'})`}
             <ArrowRight size={18} />
           </button>
         </div>
