@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Param, Body, Query } from '@nestjs/common';
 import { TableService, CreateReservationDto } from './table.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('api/v1')
 export class TableController {
@@ -10,11 +11,13 @@ export class TableController {
     return await this.tableService.getTables();
   }
 
+  @Public()
   @Get('public/menu/:qrSlug')
   async getPublicMenu(@Param('qrSlug') qrSlug: string) {
     return await this.tableService.getPublicMenuBySlug(qrSlug);
   }
 
+  @Public()
   @Post('public/tables/:qrSlug/call-waiter')
   async callWaiter(@Param('qrSlug') qrSlug: string) {
     return await this.tableService.callWaiter(qrSlug);

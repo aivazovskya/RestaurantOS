@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, XCircle } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
-import { fetchOrders, updateOrderStatus, fetchTables, WS_BASE } from '../services/api';
+import { fetchOrders, updateOrderStatus, fetchTables, WS_BASE, getAuthToken } from '../services/api';
 
 
 interface OrdersViewProps {
@@ -38,7 +38,9 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ branchId: propBranchId }
   useEffect(() => {
     if (!branchId) return;
 
+    const token = getAuthToken();
     const socket: Socket = io(`${WS_BASE}/events`, {
+      auth: { token },
       query: { branchId },
     });
 

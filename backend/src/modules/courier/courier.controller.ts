@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Param, Query, Body, BadRequestException } from '@nestjs/common';
 import { CourierService, CreateCourierDto } from './courier.service';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('api/v1/couriers')
 export class CourierController {
@@ -13,6 +14,7 @@ export class CourierController {
     return await this.courierService.getCouriers(branchId, status);
   }
 
+  @Roles('OWNER', 'MANAGER')
   @Post()
   async createCourier(@Body() dto: CreateCourierDto) {
     return await this.courierService.createCourier(dto);
@@ -23,6 +25,7 @@ export class CourierController {
     return await this.courierService.getCourierById(id);
   }
 
+  @Roles('OWNER', 'MANAGER', 'COURIER')
   @Patch(':id/status')
   async updateStatus(
     @Param('id') id: string,

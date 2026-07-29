@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { SeedService } from './prisma/seed.service';
+import { AuthModule } from './modules/auth/auth.module';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { MenuModule } from './modules/menu/menu.module';
@@ -20,6 +24,7 @@ import { AiChatModule } from './modules/ai-chat/ai-chat.module';
 @Module({
   imports: [
     PrismaModule,
+    AuthModule,
     OrganizationModule,
     WarehouseModule,
     MenuModule,
@@ -36,6 +41,16 @@ import { AiChatModule } from './modules/ai-chat/ai-chat.module';
     AnalyticsModule,
     AiChatModule,
   ],
-  providers: [SeedService],
+  providers: [
+    SeedService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}

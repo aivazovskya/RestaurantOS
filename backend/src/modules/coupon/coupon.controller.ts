@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Body, BadRequestException } from '@nestjs/common';
 import { CouponService, CreateCouponDto } from './coupon.service';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('api/v1/coupons')
 export class CouponController {
@@ -10,11 +12,13 @@ export class CouponController {
     return await this.couponService.getCoupons();
   }
 
+  @Roles('OWNER', 'MANAGER')
   @Post()
   async createCoupon(@Body() dto: CreateCouponDto) {
     return await this.couponService.createCoupon(dto);
   }
 
+  @Public()
   @Post('validate')
   async validateCoupon(
     @Body() body: { code: string; totalAmount: number; customerId?: string },

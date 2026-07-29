@@ -203,6 +203,22 @@ export class OrdersService {
     });
   }
 
+  async getOrderById(orderId: string) {
+    return await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, table: true, customer: true, courier: true },
+    });
+  }
+
+  async getOrdersForCourier(courierId: string) {
+    return await this.prisma.order.findMany({
+      where: { courierId },
+      include: { items: true, table: true, customer: true, courier: true },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+  }
+
   /**
    * Updates order status and manages auto-deduction, customer stats, loyalty points, and stock reversals.
    */

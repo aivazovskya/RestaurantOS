@@ -1,7 +1,9 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { AutoDeductionService } from '../auto-deduction/auto-deduction.service';
 import { ProcessPosReceiptDto } from '../auto-deduction/dto/process-receipt.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
+@Public()
 @Controller('api/v1/nexium')
 export class NexiumPosController {
   constructor(private readonly autoDeductionService: AutoDeductionService) {}

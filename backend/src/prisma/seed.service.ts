@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
@@ -221,14 +222,44 @@ export class SeedService implements OnApplicationBootstrap {
     });
 
     // 7. Create Demo Couriers (Phase 4)
+    const courierPin = '1234';
     await this.prisma.courier.createMany({
       data: [
-        { name: 'Алихан Смагулов', phone: '+77071112233', vehicleType: 'CAR', status: 'AVAILABLE', branchId: mainBranch.id },
-        { name: 'Ерасыл Касымов', phone: '+77084445566', vehicleType: 'SCOOTER', status: 'AVAILABLE', branchId: mainBranch.id },
-        { name: 'Диас Каримов', phone: '+77097778899', vehicleType: 'BICYCLE', status: 'OFFLINE', branchId: mainBranch.id },
+        { name: 'Алихан Смагулов', phone: '+77071112233', pinCode: courierPin, vehicleType: 'CAR', status: 'AVAILABLE', branchId: mainBranch.id },
+        { name: 'Ерасыл Касымов', phone: '+77084445566', pinCode: courierPin, vehicleType: 'SCOOTER', status: 'AVAILABLE', branchId: mainBranch.id },
+        { name: 'Диас Каримов', phone: '+77097778899', pinCode: courierPin, vehicleType: 'BICYCLE', status: 'OFFLINE', branchId: mainBranch.id },
       ],
     });
 
-    this.logger.log('Demo data successfully seeded for Restaurant OS Kazakhstan (Phase 4 Courier Delivery)!');
+    // 8. Create Demo RBAC Users (Phase 5 Auth & RBAC)
+    const defaultPasswordHash = await bcrypt.hash('password123', 10);
+    const demoUsers = [
+      { email: 'owner@restaurantos.demo', fullName: 'Нурбек Аивазов (Владелец)', role: 'OWNER', phone: '+77019990001' },
+      { email: 'manager@restaurantos.demo', fullName: 'Серик Ахметов (Менеджер)', role: 'MANAGER', phone: '+77019990002' },
+      { email: 'storekeeper@restaurantos.demo', fullName: 'Данияр Бакенов (Кладовщик)', role: 'STOREKEEPER', phone: '+77019990003' },
+      { email: 'chef@restaurantos.demo', fullName: 'Айбек Искаков (Шеф-Повар)', role: 'CHEF', phone: '+77019990004' },
+    ];
+
+    for (const u of demoUsers) {
+      const createdUser = await this.prisma.user.create({
+        data: {
+          organizationId: org.id,
+          email: u.email,
+          fullName: u.fullName,
+          role: u.role,
+          phone: u.phone,
+          passwordHash: defaultPasswordHash,
+        },
+      });
+
+      await this.prisma.userBranch.create({
+        data: {
+          userId: createdUser.id,
+          branchId: mainBranch.id,
+        },
+      });
+    }
+
+    this.logger.log('Demo data successfully seeded for Restaurant OS Kazakhstan (Phase 5 Auth & RBAC)!');
   }
 }

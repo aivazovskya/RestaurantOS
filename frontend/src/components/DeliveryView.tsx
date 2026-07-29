@@ -12,7 +12,8 @@ import {
   assignCourierToOrder, 
   updateCourierStatus,
   fetchTables,
-  WS_BASE 
+  WS_BASE,
+  getAuthToken
 } from '../services/api';
 import { io } from 'socket.io-client';
 
@@ -67,8 +68,10 @@ export const DeliveryView: React.FC<DeliveryViewProps> = ({ branchId: propBranch
   useEffect(() => {
     if (!branchId) return;
 
-    // WebSockets live updates with real branchId
+    const token = getAuthToken();
+    // WebSockets live updates with real branchId and JWT auth
     const socket = io(`${WS_BASE}/events`, {
+      auth: { token },
       query: { branchId },
     });
 

@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { StopListService } from './stop-list.service';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('api/v1/menu')
 export class StopListController {
@@ -15,13 +17,22 @@ export class StopListController {
     return await this.stopListService.getStopListHistory();
   }
 
+  @Roles('OWNER', 'MANAGER')
   @Post('items/:id/manual-stop')
-  async manualStop(@Param('id') id: string, @Body() body: { reason?: string; userId?: string }) {
-    return await this.stopListService.setManualStatus(id, false, body?.reason, body?.userId);
+  async manualStop(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+    @CurrentUser() user?: any,
+  ) {
+    return await this.stopListService.setManualStatus(id, false, body?.reason, user?.userId);
   }
 
+  @Roles('OWNER', 'MANAGER')
   @Post('items/:id/manual-restore')
-  async manualRestore(@Param('id') id: string, @Body() body?: { userId?: string }) {
-    return await this.stopListService.setManualStatus(id, true, undefined, body?.userId);
+  async manualRestore(
+    @Param('id') id: string,
+    @CurrentUser() user?: any,
+  ) {
+    return await this.stopListService.setManualStatus(id, true, undefined, user?.userId);
   }
 }

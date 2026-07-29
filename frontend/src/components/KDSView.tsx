@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChefHat, Clock, CheckCircle2, Play, AlertCircle, RefreshCw, Volume2 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
-import { fetchOrders, updateOrderStatus, fetchTables, WS_BASE } from '../services/api';
+import { fetchOrders, updateOrderStatus, fetchTables, WS_BASE, getAuthToken } from '../services/api';
 
 interface KDSViewProps {
   branchId?: string;
@@ -44,8 +44,10 @@ export const KDSView: React.FC<KDSViewProps> = ({ branchId: propBranchId, onRefr
   useEffect(() => {
     if (!branchId) return;
 
-    // Socket.IO subscription for live order events with real branchId
+    const token = getAuthToken();
+    // Socket.IO subscription for live order events with real branchId and JWT auth
     const socket: Socket = io(`${WS_BASE}/events`, {
+      auth: { token },
       query: { branchId },
     });
 

@@ -259,6 +259,7 @@ model Courier {
   id          String        @id @default(uuid())
   name        String
   phone       String        @unique
+  pinCode     String?       // PIN for courier auth
   vehicleType String        // "CAR" | "SCOOTER" | "BICYCLE" | "ON_FOOT"
   status      CourierStatus @default(OFFLINE)
   branchId    String

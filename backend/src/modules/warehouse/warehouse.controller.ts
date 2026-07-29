@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { WarehouseService } from './warehouse.service';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('api/v1/warehouse')
 export class WarehouseController {
@@ -10,6 +11,7 @@ export class WarehouseController {
     return await this.warehouseService.getIngredients();
   }
 
+  @Roles('OWNER', 'MANAGER', 'STOREKEEPER')
   @Post('ingredients')
   async createIngredient(@Body() data: any) {
     return await this.warehouseService.createIngredient(data);
@@ -20,11 +22,13 @@ export class WarehouseController {
     return await this.warehouseService.getBalances(warehouseId);
   }
 
+  @Roles('OWNER', 'MANAGER', 'STOREKEEPER')
   @Post('receipts')
   async addStockReceipt(@Body() dto: any) {
     return await this.warehouseService.addStockReceipt(dto);
   }
 
+  @Roles('OWNER', 'MANAGER', 'STOREKEEPER')
   @Post('write-offs')
   async addManualWriteOff(@Body() dto: any) {
     return await this.warehouseService.addManualWriteOff(dto);

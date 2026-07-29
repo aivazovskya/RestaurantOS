@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { LoginModal } from './components/LoginModal';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { WarehouseView } from './components/WarehouseView';
@@ -20,14 +22,16 @@ import {
   fetchIncidents 
 } from './services/api';
 
-export function App() {
+function MainAppContent() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [summaryData, setSummaryData] = useState<any>(null);
   const [balances, setBalances] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
   const [incidents, setIncidents] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   const loadAllData = async () => {
     try {
@@ -47,12 +51,20 @@ export function App() {
     } catch (e) {
       console.error('Failed to load data:', e);
     } finally {
-      setIsLoading(false);
+      setIsLoadingData(false);
     }
   };
 
   useEffect(() => {
     loadAllData();
+  }, [user]);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setIsLoginModalOpen(true);
+    };
+    window.addEventListener('auth_unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth_unauthorized', handleUnauthorized);
   }, []);
 
   if (activeTab === 'guest-menu') {
@@ -75,9 +87,13 @@ export function App() {
 
   return (
     <div className="app-layout">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
+      />
       <main className="main-content">
-        {isLoading ? (
+        {isLoadingData ? (
           <div style={{ padding: '60px', textAlign: 'center', color: 'var(--color-twilight-blue)' }}>
             Загрузка данных Restaurant OS...
           </div>
@@ -116,7 +132,20 @@ export function App() {
           </>
         )}
       </main>
+
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <AuthProvider>
+      <MainAppContent />
+    </AuthProvider>
   );
 }
 

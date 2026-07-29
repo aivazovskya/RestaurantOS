@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Param, Body, BadRequestException } from '@nestjs/common';
 import { LoyaltyService } from './loyalty.service';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('api/v1/customers/:id/loyalty')
 export class LoyaltyController {
@@ -10,6 +11,7 @@ export class LoyaltyController {
     return await this.loyaltyService.getLoyaltyHistory(customerId);
   }
 
+  @Roles('OWNER', 'MANAGER')
   @Post('adjust')
   async adjustPoints(
     @Param('id') customerId: string,

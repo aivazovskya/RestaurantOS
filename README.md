@@ -1,72 +1,73 @@
 # 🍽️ Restaurant OS Kazakhstan
 
-![Status](https://img.shields.io/badge/Status-Phase_0_%2B_Phase_1_MVP-emerald)
+![Status](https://img.shields.io/badge/Status-Phase_5_Auth_%26_RBAC_Ready-emerald)
 ![Backend](https://img.shields.io/badge/Backend-NestJS_11_%2B_Prisma_6-blue)
 ![Frontend](https://img.shields.io/badge/Frontend-React_19_%2B_Vite_8-cyan)
-![POS](https://img.shields.io/badge/Integration-Nexium_POS_Event_Bus-orange)
+![Auth](https://img.shields.io/badge/Auth-JWT_%2B_CreativeID_SSO_Abstracted-purple)
 ![Currency](https://img.shields.io/badge/Currency-KZT_₸-green)
 
-**Restaurant OS Kazakhstan** — операционная система для автоматизации ресторанов, кофеен и общепита в Казахстане. Система строится вокруг существующей кассовой системы **Nexium (POS)** и автоматически управляет складом, технологическими картами (техкартами), списаниями сырья, лояльностью и аналитикой в реальном времени.
+**Restaurant OS Kazakhstan** — операционная система для автоматизации ресторанов, кофеен и общепита в Казахстане. Система строится вокруг кассовой системы **Nexium (POS)** и автоматически управляет складом, технологическими картами, списаниями сырья, лояльностью, курьерской доставкой, аналитикой и разграничением прав доступа (RBAC).
 
 ---
 
-## 📐 Архитектура системы
+## 📐 Архитектура системы & Авторизация (RBAC)
 
 ```
        ┌─────────────────────────┐
-       │     Nexium POS System   │  (Источник транзакционных данных: чеки, оплаты)
+       │     Nexium POS System   │  (Чеки, оплаты)
        └────────────┬────────────┘
-                    │ POS_TRANSACTION_CREATED (Event Bus / Webhooks)
+                    │ Webhooks
                     ▼
- ┌──────────────────────────────────────────────┐
- │          Restaurant OS Core Backend          │
- │  - NestJS Framework                          │
- │  - Prisma ORM + SQLite / PostgreSQL          │
- │  - Real-time Auto-Deduction Engine           │
+ ┌──────────────────────────────────────────────┐      ┌─────────────────────────┐
+ │          Restaurant OS Core Backend          │ ────►│ CreativeID Credential   │
+ │  - JWT AuthGuard & RolesGuard (@Roles)       │      │ Provider (Future SSO)   │
+ │  - Decoupled CredentialProvider Interface    │      └─────────────────────────┘
+ │  - Real-time WebSockets Auth                 │
  └──────────────────┬───────────────────────────┘
-                    │ REST API & WebSockets
+                    │ REST API (Bearer JWT) & WS (Token Handshake)
                     ▼
  ┌──────────────────────────────────────────────┐
  │           Executive Web Dashboard            │
- │  - React 19 + Vite + Glassmorphism UI        │
- │  - Real-time Stock & Recipe Ledger           │
- │  - Interactive Nexium POS Simulator          │
+ │  - React 19 + AuthContext + LoginModal       │
+ │  - Multi-role UX (Owner, Manager, Chef...)   │
+ │  - PWA Courier App with PIN Code Auth        │
  └──────────────────────────────────────────────┘
 ```
 
 ---
 
-## ✨ Реализованный функционал (Фаза 0 + Фаза 1 MVP)
+## 🔐 Аккаунты для тестирования Авторизации & RBAC
 
-### 🔹 Фаза 0 — Интеграционный фундамент
-- **Модели данных**: Организации, Филиалы, Склады ("Главный склад кухни", "Бар"), Пользователи и настройки интеграции с Nexium.
-- **Webhook Ingestion**: Прием событий кассы Nexium через `POST /api/v1/nexium/webhook` с ключами идемпотентности (`receiptId`).
+При запуске сидов в базу данных записываются следующие демо-учётные записи:
 
-### 🔹 Фаза 1 — Склад, Меню и Движок Автосписания
-- **Складской учет сырья**:
-  - Сырье и полуфабрикаты (ПФ) с учетом процента холодного/горячего отхода (брутто -> нетто).
-  - Единицы измерения (`KG`, `G`, `L`, `ML`, `PCS`) и автоматическая конвертация.
-  - Пороги минимального запаса и учет себестоимости в тенге (KZT ₸).
-  - Формы ручного прихода от поставщиков и ручного списания (порча, бракераж).
-- **Меню и Технологические карты (Техкарты)**:
-  - Связка блюд с Nexium POS ID (`posItemId`).
-  - Состав ингредиентов с нормами брутто/нетто.
-  - Расчет теоретической себестоимости и **Food Cost %**.
-- **Движок автосписания в реальном времени (`AutoDeductionService`)**:
-  - Мгновенное списание сырья при поступлении чека с кассы Nexium.
-  - Рекурсивное списание полуфабрикатов (ПФ).
-  - Запись инцидентов дефицита сырья при отрицательном остатке (`DeductionIncident`).
-  - Неразрывный аудиторский журнал всех движений (`StockMovement`).
-- **Интерактивный симулятор кассы Nexium POS**:
-  - Наглядное проведение чека через Event Bus с моментальной демонстрацией списания сырья со склада.
+| Роль | Email / Логин | Пароль / PIN | Доступ |
+|---|---|---|---|
+| **OWNER** (Владелец) | `owner@restaurantos.demo` | `password123` | Полный доступ ко всем модулям, аналитике и настройкам |
+| **MANAGER** (Менеджер) | `manager@restaurantos.demo` | `password123` | Управление меню, складом, купонами, баллами лояльности |
+| **STOREKEEPER** (Кладовщик) | `storekeeper@restaurantos.demo` | `password123` | Просмотр остатков, создание приходов и списаний сырья |
+| **CHEF** (Шеф-Повар) | `chef@restaurantos.demo` | `password123` | Доступ к KDS (экрану кухни) и смене статусов блюд |
+| **COURIER** (Курьер) | `+77071112233` | `1234` (PIN) | Вход в экран курьера, управление статусом своих доставок |
+
+---
+
+## ✨ Реализованный функционал
+
+### 🔹 Фаза 5 — Авторизация и RBAC (с заделом под CreativeID SSO)
+- **Абстракция `CredentialProvider`**:
+  - Логика проверки пароля/PIN вынесена в `LocalCredentialProvider`.
+  - Замена на CreativeID SSO в будущем не затронет бизнес-логику модулей — только binding в `auth.module.ts`.
+- **JWT & Глобальные Guards**:
+  - `JwtAuthGuard` по умолчанию защищает все API и WebSocket эндпоинты.
+  - `@Public()` для открытых ручек (QR-меню гостя, вызов официанта, публичные заказы, вебхук Nexium).
+  - `@Roles(...)` & `RolesGuard` на критических операциях (списания сырья, стоп-лист, корр. баллов).
+- **Безопасность WebSockets**:
+  - Проверка JWT токена при handshake и сверка прав доступа пользователя к `branchId`.
+- **Курьерский PIN-вход**:
+  - Лёгкий вход по номеру телефона + 4-значному PIN-коду для курьеров в PWA-экране.
 
 ---
 
 ## 🛠️ Запуск проекта локально
-
-### Требования
-- **Node.js**: v18+ (проверено на Node 24)
-- **npm**: v9+
 
 ### 1. Бэкенд (NestJS)
 
@@ -74,7 +75,7 @@
 cd backend
 npm install
 npx prisma db push
-npx ts-node src/main.ts
+npm run start:dev
 ```
 > Бэкенд запустится на `http://localhost:3001`
 
@@ -86,39 +87,6 @@ npm install
 npm run dev
 ```
 > Веб-панель запустится на `http://localhost:5173`
-
----
-
-## 📂 Структура репозитория
-
-```
-RestaurantOS/
-├── backend/
-│   ├── prisma/
-│   │   └── schema.prisma        # Схема базы данных Prisma
-│   ├── src/
-│   │   ├── modules/
-│   │   │   ├── auto-deduction/  # Движок автосписания по чекам
-│   │   │   ├── menu/            # Блюда и технологические карты
-│   │   │   ├── nexium-pos/      # Прием вебхуков Nexium & Симулятор
-│   │   │   ├── organization/    # Организации, филиалы, KPI дашборд
-│   │   │   └── warehouse/       # Остатки, приходы, списания, инциденты
-│   │   ├── prisma/
-│   │   │   ├── prisma.service.ts
-│   │   │   └── seed.service.ts  # Начальное наполнение данными KZ
-│   │   ├── main.ts
-│   │   └── app.module.ts
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/          # Дашборд, Склад, Меню, История, Симулятор
-│   │   ├── services/            # API клиенты
-│   │   ├── App.tsx
-│   │   └── index.css
-│   └── package.json
-├── .gitignore
-└── README.md
-```
 
 ---
 
